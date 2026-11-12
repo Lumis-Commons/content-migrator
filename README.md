@@ -16,6 +16,10 @@ O módulo `br.com.lumis.commons.contentmigrator` fornece o serviço `br.com.lumi
 
 Estudos de apoio ficam em `docs/internal/`: evidências de plataforma, mapa de nomes, compatibilidade com o LumisXP 19.0.0, desenho dos DTOs e da visão geral em HTML e relatórios de revisão.
 
+## Licença
+
+Este módulo é software livre, distribuído sob a [licença MIT](LICENSE): qualquer pessoa pode usar, copiar, modificar e redistribuir o código, inclusive em projetos comerciais, desde que mantenha o aviso de copyright e o texto da licença. A licença cobre só o código deste repositório; o LumisXP, de que o módulo depende, segue a sua própria licença.
+
 ## Instalação
 
 ### Compatibilidade
