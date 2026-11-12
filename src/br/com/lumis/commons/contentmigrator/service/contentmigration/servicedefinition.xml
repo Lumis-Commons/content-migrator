@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<serviceDefinition xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.lumis.com.br/lumisportal/xsd/servicedefinition.xsd">
+	<service name="STR_SERVICE_NAME" type="lum_doui">
+		<description>STR_SERVICE_DESCRIPTION</description>
+	</service>
+	<!-- Interfaces -->
+	<interfaces>
+		<interface id="administration" name="STR_ADMINISTRATION" type="lum_douiAdministrationList">
+			<permissions>
+				<permission id="MANAGE_SERVICE_INSTANCE"/>
+			</permissions>
+			<menu>
+				<itemGroup type="lum_doui_list"/>
+			</menu>
+		</interface>
+		<interface id="addMigration" name="STR_ADD_MIGRATION" type="lum_doui">
+			<isRuntimeOnly>true</isRuntimeOnly>
+			<popupWindowProperties>width=620,height=350</popupWindowProperties>
+			<permissions>
+				<permission id="MANAGE_SERVICE_INSTANCE" />
+			</permissions>
+		</interface>
+		<interface id="migrationError" name="STR_ERROR_DETAILS_TITLE" type="lum_doui">
+			<isRuntimeOnly>true</isRuntimeOnly>
+			<popupWindowProperties>width=800,height=600</popupWindowProperties>
+			<permissions>
+				<permission id="MANAGE_SERVICE_INSTANCE" />
+			</permissions>
+		</interface>
+		<interface id="widgetMapping" name="STR_WIDGET_MAPPING_TITLE" type="lum_doui">
+			<isRuntimeOnly>true</isRuntimeOnly>
+			<popupWindowProperties>width=760,height=520</popupWindowProperties>
+			<permissions>
+				<permission id="MANAGE_SERVICE_INSTANCE" />
+			</permissions>
+		</interface>
+	</interfaces>
+</serviceDefinition>

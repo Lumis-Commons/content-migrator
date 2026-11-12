@@ -1,0 +1,619 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doui:douiDefinition
+		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xmlns:doui="http://www.lumis.com.br/lumisportal/xsd/doui"
+		xmlns:control="http://www.lumis.com.br/douicontrols">
+	<service>
+		<!-- Data sources -->
+		<sources>
+			<source id="migration" type="table">
+				<table>lum_cmig_Migration</table>
+				<fields>
+					<field id="id" name="STR_ID" dataType="guid" isPrimaryKey="true" display="false" />
+					<field id="name" name="STR_NAME" dataType="string" isPrimaryName="true" />
+					<field id="serviceId" name="STR_SERVICEID" dataType="string" />
+					<field id="originServiceInstanceId" name="STR_ORIGINSERVICEINSTANCEID" dataType="guid" />
+					<field id="destServiceInstanceId" name="STR_DESTSERVICEINSTANCEID" dataType="guid" />
+					<field id="updateMode" name="STR_UPDATEMODE" dataType="string" />
+					<field id="operation" name="STR_OPERATION" dataType="string" />
+					<field id="status" name="STR_STATUS" dataType="string" />
+					<field id="stopRequested" name="STR_STOPREQUESTED" dataType="boolean" />
+					<field id="totalCount" name="STR_TOTALCOUNT" dataType="integer" />
+					<field id="migratedCount" name="STR_MIGRATEDCOUNT" dataType="integer" />
+					<field id="heartbeat" name="STR_HEARTBEAT" dataType="dateTime" />
+					<field id="createdDate" name="STR_CREATEDDATE" dataType="dateTime" />
+					<field id="startDate" name="STR_STARTDATE" dataType="dateTime" />
+					<field id="endDate" name="STR_ENDDATE" dataType="dateTime" />
+					<field id="author" name="STR_AUTHOR" dataType="string" />
+					<field id="errorType" name="STR_ERRORTYPE" dataType="string" />
+					<field id="errorMessage" name="STR_ERRORMESSAGE" dataType="string" />
+					<field id="errorStack" name="STR_ERRORSTACK" dataType="text" />
+					<field id="blockingOriginItemId" name="STR_BLOCKINGORIGINITEMID" dataType="string" />
+					<field id="blockingWidgetContentId" name="STR_BLOCKINGWIDGETCONTENTID" dataType="guid" />
+				</fields>
+			</source>
+			<source id="itemMap" type="table">
+				<table>lum_cmig_MigItemMap</table>
+				<fields>
+					<field id="id" name="STR_ID" dataType="guid" isPrimaryKey="true" display="false" />
+					<field id="kind" name="STR_KIND" dataType="string" isPrimaryName="true" />
+					<field id="serviceId" name="STR_SERVICEID" dataType="string" />
+					<field id="sourceId" name="STR_SOURCEID" dataType="string" />
+					<field id="locale" name="STR_LOCALE" dataType="string" />
+					<field id="warnings" name="STR_WARNINGS" dataType="text" />
+					<field id="destCreated" name="STR_DESTCREATED" dataType="boolean" />
+					<field id="originServiceInstanceId" name="STR_ORIGINSERVICEINSTANCEID" dataType="guid" />
+					<field id="originContentId" name="STR_ORIGINCONTENTID" dataType="guid" />
+					<field id="originContentLocaleId" name="STR_ORIGINCONTENTLOCALEID" dataType="guid" />
+					<field id="originItemId" name="STR_ORIGINITEMID" dataType="string" />
+					<field id="originFileFingerprint" name="STR_ORIGINFILEFINGERPRINT" dataType="string" />
+					<field id="destServiceInstanceId" name="STR_DESTSERVICEINSTANCEID" dataType="guid" />
+					<field id="destContentId" name="STR_DESTCONTENTID" dataType="guid" />
+					<field id="destContentLocaleId" name="STR_DESTCONTENTLOCALEID" dataType="guid" />
+					<field id="destItemId" name="STR_DESTITEMID" dataType="string" />
+				</fields>
+			</source>
+			<source id="repoMap" type="table">
+				<table>lum_cmig_MigRepoMap</table>
+				<fields>
+					<field id="id" name="STR_ID" dataType="guid" isPrimaryKey="true" display="false" />
+					<field id="originRepoInstanceId" name="STR_ORIGINREPOINSTANCEID" dataType="guid" />
+					<field id="destRepoInstanceId" name="STR_DESTREPOINSTANCEID" dataType="guid" />
+					<field id="dependencyType" name="STR_DEPENDENCYTYPE" dataType="string" isPrimaryName="true" />
+				</fields>
+			</source>
+			<source id="widgetMap" type="table">
+				<table>lum_cmig_MigWidgetMap</table>
+				<fields>
+					<field id="id" name="STR_ID" dataType="guid" isPrimaryKey="true" display="false" />
+					<field id="originWidgetContentId" name="STR_ORIGINWIDGETCONTENTID" dataType="guid" isPrimaryName="true" />
+					<field id="destRepoInstanceId" name="STR_DESTREPOINSTANCEID" dataType="guid" />
+					<field id="destWidgetContentId" name="STR_DESTWIDGETCONTENTID" dataType="guid" />
+				</fields>
+			</source>
+			<source id="lock" type="table">
+				<table>lum_cmig_MigLock</table>
+				<fields>
+					<field id="id" name="STR_ID" dataType="string" isPrimaryKey="true" isPrimaryName="true" display="false" />
+					<field id="runId" name="STR_RUNID" dataType="guid" />
+					<field id="migrationId" name="STR_MIGRATIONID" dataType="guid" />
+					<field id="heartbeat" name="STR_HEARTBEAT" dataType="dateTime" />
+				</fields>
+			</source>
+			<source id="migrationAdmin">
+				<dataProviderClassName>br.com.lumis.commons.contentmigrator.service.contentmigration.dataprovider.MigrationAdminDataProvider</dataProviderClassName>
+				<fields>
+					<field id="id" name="STR_ID" dataType="guid" isPrimaryKey="true" display="false" />
+					<field id="name" name="STR_NAME" dataType="string" isPrimaryName="true" display="true" />
+					<field id="serviceId" name="STR_SERVICEID" dataType="string" display="false" />
+					<field id="serviceName" name="STR_SERVICE" dataType="string" display="true" />
+					<field id="originServiceInstanceId" name="STR_ORIGINSERVICEINSTANCEID" dataType="guid" display="false" />
+					<field id="originName" name="STR_ORIGIN" dataType="string" display="true" />
+					<field id="destServiceInstanceId" name="STR_DESTSERVICEINSTANCEID" dataType="guid" display="false" />
+					<field id="destinationName" name="STR_DESTINATION" dataType="string" display="true" />
+					<field id="updateMode" name="STR_UPDATEMODE" dataType="string" display="false" />
+					<field id="updateModeLabel" name="STR_UPDATEMODE" dataType="string" display="true" />
+					<field id="operation" name="STR_OPERATION" dataType="string" display="false" />
+					<field id="status" name="STR_STATUS" dataType="string" display="false" />
+					<field id="statusLabel" name="STR_STATUS" dataType="string" display="true" />
+					<field id="stopRequested" name="STR_STOPREQUESTED" dataType="boolean" display="false" />
+					<field id="totalCount" name="STR_TOTALCOUNT" dataType="integer" display="true" />
+					<field id="migratedCount" name="STR_MIGRATEDCOUNT" dataType="integer" display="true" />
+					<field id="heartbeat" name="STR_HEARTBEAT" dataType="dateTime" display="false" />
+					<field id="createdDate" name="STR_CREATEDDATE" dataType="dateTime" display="false" />
+					<field id="startDate" name="STR_STARTDATE" dataType="dateTime" display="false" />
+					<field id="endDate" name="STR_ENDDATE" dataType="dateTime" display="false" />
+					<field id="author" name="STR_AUTHOR" dataType="string" display="false" />
+					<field id="errorType" name="STR_ERRORTYPE" dataType="string" display="false" />
+					<field id="errorMessage" name="STR_ERRORMESSAGE" dataType="text" display="false" />
+					<field id="errorStack" name="STR_ERRORSTACK" dataType="text" display="false" />
+					<field id="blockingOriginItemId" name="STR_BLOCKINGORIGINITEMID" dataType="string" display="false" />
+					<field id="blockingWidgetContentId" name="STR_BLOCKINGWIDGETCONTENTID" dataType="guid" display="false" />
+				</fields>
+			</source>
+			<source id="contentServices">
+				<dataProviderClassName>br.com.lumis.commons.contentmigrator.service.contentmigration.dataprovider.ContentServicesDataProvider</dataProviderClassName>
+				<fields>
+					<field id="serviceId" name="STR_SERVICEID" dataType="string" isPrimaryKey="true" />
+					<field id="serviceName" name="STR_SERVICE" dataType="string" isPrimaryName="true" />
+				</fields>
+				<search enabled="false" />
+			</source>
+			<source id="originInstances">
+				<dataProviderClassName>br.com.lumis.commons.contentmigrator.service.contentmigration.dataprovider.InstancesByServiceDataProvider</dataProviderClassName>
+				<fields>
+					<field id="serviceInstanceId" name="STR_ID" dataType="guid" isPrimaryKey="true" />
+					<field id="serviceId" name="STR_SERVICEID" dataType="string" />
+					<field id="serviceInstanceName" name="STR_ORIGIN" dataType="string" isPrimaryName="true" />
+				</fields>
+				<search enabled="false" />
+			</source>
+			<source id="destinationInstances">
+				<dataProviderClassName>br.com.lumis.commons.contentmigrator.service.contentmigration.dataprovider.InstancesByServiceDataProvider</dataProviderClassName>
+				<fields>
+					<field id="serviceInstanceId" name="STR_ID" dataType="guid" isPrimaryKey="true" />
+					<field id="serviceId" name="STR_SERVICEID" dataType="string" />
+					<field id="serviceInstanceName" name="STR_DESTINATION" dataType="string" isPrimaryName="true" />
+				</fields>
+				<search enabled="false" />
+			</source>
+			<source id="migrationError">
+				<dataProviderClassName>br.com.lumis.commons.contentmigrator.service.contentmigration.dataprovider.MigrationErrorDataProvider</dataProviderClassName>
+				<fields>
+					<field id="migrationId" dataType="guid" display="false" />
+					<field id="errorMessage" name="STR_ERRORMESSAGE" dataType="text" />
+					<field id="errorStack" name="STR_ERRORSTACK" dataType="text" />
+				</fields>
+				<filters>
+					<filter id="migrationId" requestParameterName="migrationId" hidden="true" required="true" />
+				</filters>
+			</source>
+			<source id="migrationForm">
+				<fields>
+					<field id="name" name="STR_NAME" dataType="string" externalData="true" required="true" />
+					<field id="serviceId" name="STR_SERVICE" dataType="string" externalData="true" required="true" />
+					<field id="originServiceInstanceId" name="STR_ORIGIN" dataType="guid" externalData="true" required="true" />
+					<field id="destServiceInstanceId" name="STR_DESTINATION" dataType="guid" externalData="true" required="true" />
+				</fields>
+			</source>
+			<source id="widgetMapping">
+				<dataProviderClassName>br.com.lumis.commons.contentmigrator.service.contentmigration.dataprovider.WidgetMappingDataProvider</dataProviderClassName>
+				<fields>
+					<field id="migrationId" dataType="guid" isPrimaryKey="true" />
+					<field id="title" name="STR_BLOCKED_CONTENT_TITLE" dataType="string" />
+					<field id="introduction" name="STR_BLOCKED_CONTENT_INTRODUCTION" dataType="text" />
+					<field id="blockingOriginItemId" dataType="string" display="false" />
+					<field id="originWidgetContentId" dataType="guid" />
+					<field id="originWidgetName" name="STR_ORIGIN_WIDGET" dataType="string" />
+					<field id="destServiceInstanceId" dataType="guid" display="false" />
+					<field id="destRepoInstanceId" dataType="guid" display="false" />
+				</fields>
+				<filters>
+					<filter id="migrationId" requestParameterName="migrationId" hidden="true" required="true" />
+				</filters>
+				<search enabled="false" />
+			</source>
+			<source id="destinationWidgets">
+				<dataProviderClassName>br.com.lumis.commons.contentmigrator.service.contentmigration.dataprovider.DestinationWidgetsDataProvider</dataProviderClassName>
+				<fields>
+					<field id="widgetContentId" name="STR_DESTINATION_WIDGET" dataType="guid" isPrimaryKey="true" />
+					<field id="widgetName" name="STR_DESTINATION_WIDGET" dataType="string" isPrimaryName="true" />
+				</fields>
+				<filters>
+					<filter id="migrationId" requestParameterName="migrationId" hidden="true" required="true" />
+				</filters>
+				<search enabled="false" />
+			</source>
+			<source id="widgetMappingForm">
+				<fields>
+					<field id="migrationId" dataType="guid" externalData="true" required="true" />
+					<field id="destWidgetContentId" name="STR_DESTINATION_WIDGET" dataType="guid" externalData="true" required="true" />
+				</fields>
+			</source>
+		</sources>
+	</service>
+	<!-- Interfaces -->
+	<interfaces>
+		<interface id="administration">
+			<!-- Data sources -->
+			<sources>
+				<source id="migrationAdmin" readData="always">
+					<fields inherit="all" />
+				</source>
+			</sources>
+			<!-- Controls -->
+			<controls>
+				<control:lum_form>
+					<control:lum_interfaceHeader />
+					<control:lum_interfaceHeaderButtons id="migrationButtons">
+						<control:lum_addButton id="addMigrationButton" text="STR_ADD_MIGRATION" isPrimary="true">
+							<onClick type="popupRunTimeInterface" keepParentActive="false">
+								<interfaceId>addMigration</interfaceId>
+								<pageId>LumisBlankPage</pageId>
+							</onClick>
+						</control:lum_addButton>
+						<control:lum_button id="startIncremental" text="STR_START_INCREMENTAL">
+							<rowAction />
+							<onClick type="processAction" processActionId="startIncremental">
+								<validators>
+									<validator type="selectedOne" controlId="migrationList.tabulardata" />
+								</validators>
+								<addParameters>
+									<parameter name="migrationId">
+										<value type="firstSelected" controlId="migrationList.tabulardata" />
+									</parameter>
+								</addParameters>
+							</onClick>
+						</control:lum_button>
+						<control:lum_button id="startUpdate" text="STR_START_UPDATE">
+							<rowAction />
+							<onClick type="processAction" processActionId="startUpdate">
+								<validators>
+									<validator type="selectedOne" controlId="migrationList.tabulardata" />
+								</validators>
+								<addParameters>
+									<parameter name="migrationId">
+										<value type="firstSelected" controlId="migrationList.tabulardata" />
+									</parameter>
+								</addParameters>
+							</onClick>
+						</control:lum_button>
+						<control:lum_button id="stopMigration" text="STR_STOP">
+							<rowAction />
+							<onClick type="processAction" processActionId="stopMigration">
+								<validators>
+									<validator type="selectedOne" controlId="migrationList.tabulardata" />
+								</validators>
+								<addParameters>
+									<parameter name="migrationId">
+										<value type="firstSelected" controlId="migrationList.tabulardata" />
+									</parameter>
+								</addParameters>
+							</onClick>
+						</control:lum_button>
+						<control:lum_button id="deleteMigration" text="STR_DELETE">
+							<rowAction />
+							<onClick type="processAction" processActionId="deleteMigration">
+								<validators>
+									<validator type="selectedOne" controlId="migrationList.tabulardata" />
+								</validators>
+								<addParameters>
+									<parameter name="migrationId">
+										<value type="firstSelected" controlId="migrationList.tabulardata" />
+									</parameter>
+								</addParameters>
+							</onClick>
+						</control:lum_button>
+						<control:lum_button id="undoMigration" text="STR_UNDO">
+							<rowAction />
+							<onClick type="processAction" processActionId="undoMigration">
+								<validators>
+									<validator type="selectedOne" controlId="migrationList.tabulardata" />
+								</validators>
+								<addParameters>
+									<parameter name="migrationId">
+										<value type="firstSelected" controlId="migrationList.tabulardata" />
+									</parameter>
+								</addParameters>
+							</onClick>
+						</control:lum_button>
+						<control:lum_button id="migrationErrorDetails" text="STR_ERROR_DETAILS">
+							<rowAction />
+							<onClick type="popupRunTimeInterface" keepParentActive="false">
+								<interfaceId>migrationError</interfaceId>
+								<pageId>LumisBlankPage</pageId>
+								<validators>
+									<validator type="selectedOne" controlId="migrationList.tabulardata" />
+								</validators>
+								<addParameters>
+									<parameter name="migrationId">
+										<value type="firstSelected" controlId="migrationList.tabulardata" />
+									</parameter>
+								</addParameters>
+							</onClick>
+						</control:lum_button>
+						<control:lum_button id="mapWidget" text="STR_MAP_WIDGET">
+							<rowAction />
+							<onClick type="popupRunTimeInterface" keepParentActive="false">
+								<interfaceId>widgetMapping</interfaceId>
+								<pageId>LumisBlankPage</pageId>
+								<validators>
+									<validator type="selectedOne" controlId="migrationList.tabulardata" />
+								</validators>
+								<addParameters>
+									<parameter name="migrationId">
+										<value type="firstSelected" controlId="migrationList.tabulardata" />
+									</parameter>
+								</addParameters>
+							</onClick>
+						</control:lum_button>
+					</control:lum_interfaceHeaderButtons>
+					<control:lum_adminList id="migrationList" dataId="id" sourceId="migrationAdmin" />
+					<control:lum_script id="migrationStatusPolling">
+						<script><![CDATA[
+						(function () {
+							var endpoint = g_LumisRootPath + "lumis/api/rest/br/com/lumis/commons/contentmigrator/contentmigration/status";
+							var labels = {
+								pt: { STOPPED: "Parado", STOPPED_WITH_ERROR: "Parado com erro", RUNNING: "Em execução", FINISHED: "Finalizado" },
+								en: { STOPPED: "Stopped", STOPPED_WITH_ERROR: "Stopped with error", RUNNING: "Running", FINISHED: "Finished" }
+							};
+							function refreshMigrationStatuses() {
+								fetch(endpoint, { credentials: "same-origin", headers: { "Accept": "application/json" } })
+									.then(function (response) { if (!response.ok) throw new Error("status request failed"); return response.json(); })
+									.then(function (items) {
+										items.forEach(function (item) {
+											var selector = 'input[name="migrationList.tabulardata"][value="' + item.id + '"]';
+											var row = document.querySelector(selector);
+											if (!row) return;
+											var itemRow = row.closest("li.lum-list-item");
+											if (!itemRow) return;
+											var status = itemRow.querySelector(".lum-field-id-statusLabel .lum-field-value");
+											var total = itemRow.querySelector(".lum-field-id-totalCount .lum-field-value");
+											var migrated = itemRow.querySelector(".lum-field-id-migratedCount .lum-field-value");
+											if (status) {
+												var language = (document.documentElement.lang || navigator.language || "en").toLowerCase();
+												var languageLabels = language.indexOf("pt") === 0 ? labels.pt : labels.en;
+												status.textContent = languageLabels[item.status] || item.status;
+											}
+											if (total) total.textContent = item.totalCount;
+											if (migrated) migrated.textContent = item.migratedCount;
+										});
+									})
+									.catch(function () { /* Keep the last rendered status if polling fails. */ });
+							}
+							window.setInterval(refreshMigrationStatuses, 60000);
+						})();
+						]]></script>
+					</control:lum_script>
+				</control:lum_form>
+			</controls>
+			<!-- Process actions -->
+			<processActions>
+				<processAction id="startIncremental"
+						className="br.com.lumis.commons.contentmigrator.service.contentmigration.processaction.MigrationProcessActionHandler">
+					<response type="doui_standardEmbedded" />
+				</processAction>
+				<processAction id="startUpdate" className="br.com.lumis.commons.contentmigrator.service.contentmigration.processaction.MigrationProcessActionHandler">
+					<response type="doui_standardEmbedded" />
+				</processAction>
+				<processAction id="stopMigration" className="br.com.lumis.commons.contentmigrator.service.contentmigration.processaction.MigrationProcessActionHandler">
+					<response type="doui_standardEmbedded" />
+				</processAction>
+				<processAction id="deleteMigration" className="br.com.lumis.commons.contentmigrator.service.contentmigration.processaction.MigrationProcessActionHandler">
+					<message type="confirm">STR_CONFIRM_DELETE_MIGRATION</message>
+					<response type="doui_standardEmbedded" />
+				</processAction>
+				<processAction id="undoMigration" className="br.com.lumis.commons.contentmigrator.service.contentmigration.processaction.MigrationProcessActionHandler">
+					<message type="confirm">STR_CONFIRM_UNDO_MIGRATION</message>
+					<response type="doui_standardEmbedded" />
+				</processAction>
+			</processActions>
+		</interface>
+		<interface id="addMigration">
+			<!-- Data sources -->
+			<sources>
+				<source id="migrationForm">
+					<fields inherit="all" />
+				</source>
+				<source id="contentServices" readData="always">
+					<fields inherit="all" />
+				</source>
+				<source id="originInstances" readData="always">
+					<fields inherit="all" />
+					<orderBy>
+						<field direction="ascending" id="serviceInstanceName" />
+					</orderBy>
+				</source>
+				<source id="destinationInstances" readData="always">
+					<fields inherit="all" />
+					<orderBy>
+						<field direction="ascending" id="serviceInstanceName" />
+					</orderBy>
+				</source>
+			</sources>
+			<!-- Controls -->
+			<controls>
+				<control:lum_form>
+					<control:lum_propertyPage>
+						<control:lum_autoLayoutFields>
+							<field id="name">
+								<label>
+									<control:lum_label text="STR_NAME" showRequired="true" />
+								</label>
+								<value>
+									<control:lum_inputText id="name" sourceId="migrationForm" dataId="name" maxLength="255">
+										<control:lum_requiredValueValidator />
+									</control:lum_inputText>
+								</value>
+							</field>
+							<field id="serviceId">
+								<label>
+									<control:lum_label text="STR_SERVICE" showRequired="true" />
+								</label>
+								<value>
+									<control:lum_dropDownList
+											id="serviceId"
+											sourceId="migrationForm"
+											dataId="serviceId"
+											optionsSourceId="contentServices"
+											valueFieldId="serviceId"
+											textFieldId="serviceName"
+											fieldName="STR_SERVICE">
+										<control:lum_requiredValueValidator validateOnlyIfVisible="true" />
+										<setSourceParameter sourceId="originInstances" parameterName="serviceId" />
+										<setSourceParameter sourceId="destinationInstances" parameterName="serviceId" />
+										<onChange type="script">
+											<script><![CDATA[document.getElementById("originServiceInstanceId").value = "";
+											document.getElementById("destServiceInstanceId").value = "";]]></script>
+										</onChange>
+										<onChange type="renderAction" />
+									</control:lum_dropDownList>
+								</value>
+							</field>
+							<field id="originServiceInstanceId">
+								<label>
+									<control:lum_label text="STR_ORIGIN" showRequired="true" />
+								</label>
+								<value>
+									<control:lum_dropDownList
+											id="originServiceInstanceId"
+											sourceId="migrationForm"
+											dataId="originServiceInstanceId"
+											optionsSourceId="originInstances"
+											valueFieldId="serviceInstanceId"
+											textFieldId="serviceInstanceName"
+											fieldName="STR_ORIGIN">
+										<control:lum_requiredValueValidator validateOnlyIfVisible="true" />
+										<setSourceParameter sourceId="destinationInstances" parameterName="originServiceInstanceId" />
+										<onChange type="script">
+											<script><![CDATA[document.getElementById("destServiceInstanceId").value = "";]]></script>
+										</onChange>
+										<onChange type="renderAction" />
+									</control:lum_dropDownList>
+								</value>
+							</field>
+							<field id="destServiceInstanceId">
+								<label>
+									<control:lum_label text="STR_DESTINATION" showRequired="true" />
+								</label>
+								<value>
+									<control:lum_dropDownList
+											id="destServiceInstanceId"
+											sourceId="migrationForm"
+											dataId="destServiceInstanceId"
+											optionsSourceId="destinationInstances"
+											valueFieldId="serviceInstanceId"
+											textFieldId="serviceInstanceName"
+											fieldName="STR_DESTINATION">
+										<control:lum_requiredValueValidator validateOnlyIfVisible="true" />
+									</control:lum_dropDownList>
+								</value>
+							</field>
+						</control:lum_autoLayoutFields>
+						<control:lum_footer>
+							<control:lum_interfaceButtons>
+								<control:lum_button id="createMigration" text="STR_CREATE" isPrimary="true">
+									<onClick type="processAction" processActionId="createMigration" />
+								</control:lum_button>
+							</control:lum_interfaceButtons>
+						</control:lum_footer>
+					</control:lum_propertyPage>
+				</control:lum_form>
+			</controls>
+			<!-- Process actions -->
+			<processActions>
+				<processAction id="createMigration" className="br.com.lumis.commons.contentmigrator.service.contentmigration.processaction.MigrationProcessActionHandler">
+					<response type="doui_refreshParent" />
+					<response type="doui_closeWindow" />
+				</processAction>
+			</processActions>
+		</interface>
+		<interface id="migrationError">
+			<!-- Data sources -->
+			<sources>
+				<source id="migrationError" readData="always">
+					<fields inherit="all" />
+				</source>
+			</sources>
+			<!-- Controls -->
+			<controls>
+				<control:lum_form>
+					<control:lum_propertyPage>
+						<control:lum_autoLayoutFields>
+							<field id="errorMessage">
+								<label>
+									<control:lum_label text="STR_ERRORMESSAGE" />
+								</label>
+								<value>
+									<control:lum_inputText id="errorMessage" sourceId="migrationError" dataId="errorMessage" readonly="true" />
+								</value>
+							</field>
+							<field id="errorStack">
+								<label>
+									<control:lum_label text="STR_ERRORSTACK" />
+								</label>
+								<value>
+									<control:lum_inputTextArea
+											id="errorStack"
+											sourceId="migrationError"
+											dataId="errorStack"
+											rows="18"
+											style="width:100%;overflow:auto;font-family:monospace"
+											readonly="true" />
+								</value>
+							</field>
+						</control:lum_autoLayoutFields>
+					</control:lum_propertyPage>
+				</control:lum_form>
+			</controls>
+		</interface>
+		<interface id="widgetMapping">
+			<!-- Data sources -->
+			<sources>
+				<source id="widgetMapping" readData="always">
+					<fields inherit="all" />
+				</source>
+				<source id="destinationWidgets" readData="always">
+					<fields inherit="all" />
+				</source>
+				<source id="widgetMappingForm">
+					<fields inherit="all" />
+				</source>
+			</sources>
+			<!-- Controls -->
+			<controls>
+				<control:lum_form>
+					<control:lum_propertyPage>
+						<control:lum_label text="STR_WIDGET_MAPPING_INSTRUCTION" />
+						<control:lum_inputHidden id="migrationId" sourceId="widgetMapping" dataId="migrationId" />
+						<control:lum_autoLayoutFields>
+							<field id="title">
+								<label>
+									<control:lum_label text="STR_BLOCKED_CONTENT_TITLE" />
+								</label>
+								<value>
+									<control:lum_inputText id="blockedTitle" sourceId="widgetMapping" dataId="title" readonly="true" />
+								</value>
+							</field>
+							<field id="introduction">
+								<label>
+									<control:lum_label text="STR_BLOCKED_CONTENT_INTRODUCTION" />
+								</label>
+								<value>
+									<control:lum_inputTextArea
+											id="blockedIntroduction"
+											sourceId="widgetMapping"
+											dataId="introduction"
+											rows="4"
+											style="width:100%"
+											readonly="true" />
+								</value>
+							</field>
+							<field id="originWidget">
+								<label>
+									<control:lum_label text="STR_ORIGIN_WIDGET" />
+								</label>
+								<value>
+									<control:lum_inputText id="originWidget" sourceId="widgetMapping" dataId="originWidgetName" readonly="true" />
+								</value>
+							</field>
+							<field id="destWidgetContentId">
+								<label>
+									<control:lum_label text="STR_DESTINATION_WIDGET" showRequired="true" />
+								</label>
+								<value>
+									<control:lum_dropDownList
+											id="destWidgetContentId"
+											sourceId="widgetMappingForm"
+											dataId="destWidgetContentId"
+											optionsSourceId="destinationWidgets"
+											valueFieldId="widgetContentId"
+											textFieldId="widgetName"
+											fieldName="STR_DESTINATION_WIDGET">
+										<control:lum_requiredValueValidator validateOnlyIfVisible="true" />
+										<setSourceParameter sourceId="destinationWidgets" parameterName="migrationId" />
+									</control:lum_dropDownList>
+								</value>
+							</field>
+						</control:lum_autoLayoutFields>
+						<control:lum_footer>
+							<control:lum_interfaceButtons>
+								<control:lum_button id="saveWidgetMapping" text="STR_SAVE_WIDGET_MAPPING" isPrimary="true">
+									<onClick type="processAction" processActionId="saveWidgetMapping" />
+								</control:lum_button>
+							</control:lum_interfaceButtons>
+						</control:lum_footer>
+					</control:lum_propertyPage>
+				</control:lum_form>
+			</controls>
+			<!-- Process actions -->
+			<processActions>
+				<processAction id="saveWidgetMapping"
+						className="br.com.lumis.commons.contentmigrator.service.contentmigration.processaction.WidgetMappingProcessActionHandler">
+					<response type="doui_refreshParent" />
+					<response type="doui_closeWindow" />
+				</processAction>
+			</processActions>
+		</interface>
+	</interfaces>
+</doui:douiDefinition>

@@ -1,0 +1,1337 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doui:douiDefinition
+		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xmlns:doui="http://www.lumis.com.br/lumisportal/xsd/doui"
+		xmlns:control="http://www.lumis.com.br/douicontrols">
+	<service>
+		<!-- Data sources -->
+		<sources>
+			<source id="migration" type="table">
+				<table>lum_cmig_HMigration</table>
+				<fields>
+					<field id="id" name="STR_ID" dataType="guid" isPrimaryKey="true" display="false" />
+					<field id="name" name="STR_NAME" dataType="string" isPrimaryName="true" />
+					<field id="serviceId" name="STR_SERVICEID" dataType="string" />
+					<field id="originServiceInstanceId" name="STR_ORIGINSERVICEINSTANCEID" dataType="guid" />
+					<field id="destServiceInstanceId" name="STR_DESTSERVICEINSTANCEID" dataType="guid" />
+					<field id="updateMode" name="STR_UPDATEMODE" dataType="string" />
+					<field id="operation" name="STR_OPERATION" dataType="string" />
+					<field id="status" name="STR_STATUS" dataType="string" />
+					<field id="stopRequested" name="STR_STOPREQUESTED" dataType="boolean" />
+					<field id="totalCount" name="STR_TOTALCOUNT" dataType="integer" />
+					<field id="migratedCount" name="STR_MIGRATEDCOUNT" dataType="integer" />
+					<field id="heartbeat" name="STR_HEARTBEAT" dataType="dateTime" />
+					<field id="createdDate" name="STR_CREATEDDATE" dataType="dateTime" />
+					<field id="startDate" name="STR_STARTDATE" dataType="dateTime" />
+					<field id="endDate" name="STR_ENDDATE" dataType="dateTime" />
+					<field id="author" name="STR_AUTHOR" dataType="string" />
+					<field id="errorType" name="STR_ERRORTYPE" dataType="string" />
+					<field id="errorMessage" name="STR_ERRORMESSAGE" dataType="string" />
+					<field id="errorStack" name="STR_ERRORSTACK" dataType="text" />
+					<field id="blockingOriginItemId" name="STR_BLOCKINGORIGINITEMID" dataType="string" />
+					<field id="blockingWidgetContentId" name="STR_BLOCKINGWIDGETCONTENTID" dataType="guid" />
+				</fields>
+			</source>
+			<source id="itemMap" type="table">
+				<table>lum_cmig_HMigItemMap</table>
+				<fields>
+					<field id="id" name="STR_ID" dataType="guid" isPrimaryKey="true" display="false" />
+					<field id="kind" name="STR_KIND" dataType="string" isPrimaryName="true" />
+					<field id="serviceId" name="STR_SERVICEID" dataType="string" />
+					<field id="sourceId" name="STR_SOURCEID" dataType="string" />
+					<field id="locale" name="STR_LOCALE" dataType="string" />
+					<field id="warnings" name="STR_WARNINGS" dataType="text" />
+					<field id="destCreated" name="STR_DESTCREATED" dataType="boolean" />
+					<field id="originServiceInstanceId" name="STR_ORIGINSERVICEINSTANCEID" dataType="guid" />
+					<field id="originContentId" name="STR_ORIGINCONTENTID" dataType="guid" />
+					<field id="originContentLocaleId" name="STR_ORIGINCONTENTLOCALEID" dataType="guid" />
+					<field id="originItemId" name="STR_ORIGINITEMID" dataType="string" />
+					<field id="originFileFingerprint" name="STR_ORIGINFILEFINGERPRINT" dataType="string" />
+					<field id="destServiceInstanceId" name="STR_DESTSERVICEINSTANCEID" dataType="guid" />
+					<field id="destContentId" name="STR_DESTCONTENTID" dataType="guid" />
+					<field id="destContentLocaleId" name="STR_DESTCONTENTLOCALEID" dataType="guid" />
+					<field id="destItemId" name="STR_DESTITEMID" dataType="string" />
+				</fields>
+			</source>
+			<source id="repoMap" type="table">
+				<table>lum_cmig_HMigRepoMap</table>
+				<fields>
+					<field id="id" name="STR_ID" dataType="guid" isPrimaryKey="true" display="false" />
+					<field id="originRepoInstanceId" name="STR_ORIGINREPOINSTANCEID" dataType="guid" />
+					<field id="destRepoInstanceId" name="STR_DESTREPOINSTANCEID" dataType="guid" />
+					<field id="dependencyType" name="STR_DEPENDENCYTYPE" dataType="string" isPrimaryName="true" />
+				</fields>
+			</source>
+			<source id="widgetMap" type="table">
+				<table>lum_cmig_HMigWidgetMap</table>
+				<fields>
+					<field id="id" name="STR_ID" dataType="guid" isPrimaryKey="true" display="false" />
+					<field id="originWidgetContentId" name="STR_ORIGINWIDGETCONTENTID" dataType="guid" isPrimaryName="true" />
+					<field id="destRepoInstanceId" name="STR_DESTREPOINSTANCEID" dataType="guid" />
+					<field id="destWidgetContentId" name="STR_DESTWIDGETCONTENTID" dataType="guid" />
+				</fields>
+			</source>
+			<source id="lock" type="table">
+				<table>lum_cmig_HMigLock</table>
+				<fields>
+					<field id="id" name="STR_ID" dataType="string" isPrimaryKey="true" isPrimaryName="true" display="false" />
+					<field id="runId" name="STR_RUNID" dataType="guid" />
+					<field id="migrationId" name="STR_MIGRATIONID" dataType="guid" />
+					<field id="heartbeat" name="STR_HEARTBEAT" dataType="dateTime" />
+				</fields>
+			</source>
+			<source id="migrationAdmin">
+				<dataProviderClassName
+				>br.com.lumis.commons.contentmigrator.service.hierarchicalcontentmigration.dataprovider.MigrationAdminDataProvider</dataProviderClassName>
+				<fields>
+					<field id="id" name="STR_ID" dataType="guid" isPrimaryKey="true" display="false" />
+					<field id="name" name="STR_NAME" dataType="string" isPrimaryName="true" display="true" />
+					<field id="serviceId" name="STR_SERVICEID" dataType="string" display="false" />
+					<field id="originServiceInstanceId" name="STR_ORIGINSERVICEINSTANCEID" dataType="guid" display="false" />
+					<field id="originName" name="STR_ORIGIN" dataType="string" display="true" />
+					<field id="destServiceInstanceId" name="STR_DESTSERVICEINSTANCEID" dataType="guid" display="false" />
+					<field id="destinationName" name="STR_DESTINATION" dataType="string" display="true" />
+					<field id="updateMode" name="STR_UPDATEMODE" dataType="string" display="false" />
+					<field id="updateModeLabel" name="STR_UPDATEMODE" dataType="string" display="true" />
+					<field id="operation" name="STR_OPERATION" dataType="string" display="false" />
+					<field id="status" name="STR_STATUS" dataType="string" display="false" />
+					<field id="statusLabel" name="STR_STATUS" dataType="string" display="true" />
+					<field id="stopRequested" name="STR_STOPREQUESTED" dataType="boolean" display="false" />
+					<field id="warningCount" name="STR_WARNINGS" dataType="integer" display="true" />
+					<field id="markCount" name="STR_MARK_COUNT" dataType="integer" display="true" />
+					<field id="totalCount" name="STR_TOTALCOUNT" dataType="integer" display="true" />
+					<field id="migratedCount" name="STR_MIGRATEDCOUNT" dataType="integer" display="true" />
+					<field id="heartbeat" name="STR_HEARTBEAT" dataType="dateTime" display="false" />
+					<field id="createdDate" name="STR_CREATEDDATE" dataType="dateTime" display="false" />
+					<field id="startDate" name="STR_STARTDATE" dataType="dateTime" display="false" />
+					<field id="endDate" name="STR_ENDDATE" dataType="dateTime" display="false" />
+					<field id="author" name="STR_AUTHOR" dataType="string" display="false" />
+					<field id="errorType" name="STR_ERRORTYPE" dataType="string" display="false" />
+					<field id="errorMessage" name="STR_ERRORMESSAGE" dataType="text" display="false" />
+					<field id="errorStack" name="STR_ERRORSTACK" dataType="text" display="false" />
+					<field id="blockingOriginItemId" name="STR_BLOCKINGORIGINITEMID" dataType="string" display="false" />
+					<field id="blockingWidgetContentId" name="STR_BLOCKINGWIDGETCONTENTID" dataType="guid" display="false" />
+				</fields>
+			</source>
+			<source id="originInstances">
+				<dataProviderClassName
+				>br.com.lumis.commons.contentmigrator.service.hierarchicalcontentmigration.dataprovider.InstancesByServiceDataProvider</dataProviderClassName>
+				<fields>
+					<field id="serviceInstanceId" name="STR_ID" dataType="guid" isPrimaryKey="true" />
+					<field id="serviceId" name="STR_SERVICEID" dataType="string" />
+					<field id="serviceInstanceName" name="STR_ORIGIN" dataType="string" isPrimaryName="true" />
+				</fields>
+				<search enabled="false" />
+			</source>
+			<source id="destinationInstances">
+				<dataProviderClassName
+				>br.com.lumis.commons.contentmigrator.service.hierarchicalcontentmigration.dataprovider.InstancesByServiceDataProvider</dataProviderClassName>
+				<fields>
+					<field id="serviceInstanceId" name="STR_ID" dataType="guid" isPrimaryKey="true" />
+					<field id="serviceId" name="STR_SERVICEID" dataType="string" />
+					<field id="serviceInstanceName" name="STR_DESTINATION" dataType="string" isPrimaryName="true" />
+				</fields>
+				<search enabled="false" />
+			</source>
+			<source id="migrationWarnings">
+				<dataProviderClassName
+				>br.com.lumis.commons.contentmigrator.service.hierarchicalcontentmigration.dataprovider.MigrationWarningsDataProvider</dataProviderClassName>
+				<fields>
+					<field id="id" dataType="guid" isPrimaryKey="true" display="false" />
+					<field id="migrationId" dataType="guid" display="false" />
+					<field id="title" name="STR_WARNING_CONTENT_TITLE" dataType="string" isPrimaryName="true" />
+					<field id="warnings" name="STR_WARNINGS" dataType="text" />
+				</fields>
+				<filters>
+					<filter id="migrationId" requestParameterName="migrationId" hidden="true" required="true" />
+				</filters>
+				<search enabled="false" />
+			</source>
+			<source id="migrationError">
+				<dataProviderClassName
+				>br.com.lumis.commons.contentmigrator.service.hierarchicalcontentmigration.dataprovider.MigrationErrorDataProvider</dataProviderClassName>
+				<fields>
+					<field id="migrationId" dataType="guid" display="false" />
+					<field id="errorMessage" name="STR_ERRORMESSAGE" dataType="text" />
+					<field id="errorStack" name="STR_ERRORSTACK" dataType="text" />
+				</fields>
+				<filters>
+					<filter id="migrationId" requestParameterName="migrationId" hidden="true" required="true" />
+				</filters>
+			</source>
+			<source id="selectionForm">
+				<dataProviderClassName
+				>br.com.lumis.commons.contentmigrator.service.hierarchicalcontentmigration.query.MigrationAdminQueries$SelectionFormDataProvider</dataProviderClassName>
+				<fields>
+					<field id="migrationId" dataType="guid" isPrimaryKey="true" />
+					<field id="originServiceInstanceId" dataType="guid" />
+					<field id="selectedContentIds" dataType="text" />
+				</fields>
+				<filters>
+					<filter id="migrationId" requestParameterName="migrationId" hidden="true" required="true" />
+				</filters>
+			</source>
+			<source id="migrationForm">
+				<fields>
+					<field id="name" name="STR_NAME" dataType="string" externalData="true" required="true" />
+					<field id="originServiceInstanceId" name="STR_ORIGIN" dataType="guid" externalData="true" required="true" />
+					<field id="destServiceInstanceId" name="STR_DESTINATION" dataType="guid" externalData="true" required="true" />
+					<field id="selectedContentIds" name="STR_CONTENTS_TO_MIGRATE" dataType="text" externalData="true" required="true" />
+				</fields>
+			</source>
+			<source id="widgetMapping">
+				<dataProviderClassName
+				>br.com.lumis.commons.contentmigrator.service.hierarchicalcontentmigration.dataprovider.WidgetMappingDataProvider</dataProviderClassName>
+				<fields>
+					<field id="migrationId" dataType="guid" isPrimaryKey="true" />
+					<field id="title" name="STR_BLOCKED_CONTENT_TITLE" dataType="string" />
+					<field id="introduction" name="STR_BLOCKED_CONTENT_INTRODUCTION" dataType="text" />
+					<field id="blockingOriginItemId" dataType="string" display="false" />
+					<field id="originWidgetContentId" dataType="guid" />
+					<field id="originWidgetName" name="STR_ORIGIN_WIDGET" dataType="string" />
+					<field id="destServiceInstanceId" dataType="guid" display="false" />
+					<field id="destRepoInstanceId" dataType="guid" display="false" />
+				</fields>
+				<filters>
+					<filter id="migrationId" requestParameterName="migrationId" hidden="true" required="true" />
+				</filters>
+				<search enabled="false" />
+			</source>
+			<source id="destinationWidgets">
+				<dataProviderClassName
+				>br.com.lumis.commons.contentmigrator.service.hierarchicalcontentmigration.dataprovider.DestinationWidgetsDataProvider</dataProviderClassName>
+				<fields>
+					<field id="widgetContentId" name="STR_DESTINATION_WIDGET" dataType="guid" isPrimaryKey="true" />
+					<field id="widgetName" name="STR_DESTINATION_WIDGET" dataType="string" isPrimaryName="true" />
+				</fields>
+				<filters>
+					<filter id="migrationId" requestParameterName="migrationId" hidden="true" required="true" />
+				</filters>
+				<search enabled="false" />
+			</source>
+			<source id="widgetMappingForm">
+				<fields>
+					<field id="migrationId" dataType="guid" externalData="true" required="true" />
+					<field id="destWidgetContentId" name="STR_DESTINATION_WIDGET" dataType="guid" externalData="true" required="true" />
+				</fields>
+			</source>
+		</sources>
+	</service>
+	<!-- Interfaces -->
+	<interfaces>
+		<interface id="administration">
+			<!-- Data sources -->
+			<sources>
+				<source id="migrationAdmin" readData="always">
+					<fields inherit="all" />
+				</source>
+			</sources>
+			<!-- Controls -->
+			<controls>
+				<control:lum_form>
+					<control:lum_interfaceHeader />
+					<control:lum_interfaceHeaderButtons id="migrationButtons">
+						<control:lum_addButton id="addMigrationButton" text="STR_ADD_MIGRATION" isPrimary="true">
+							<onClick type="popupRunTimeInterface" keepParentActive="false">
+								<interfaceId>addMigration</interfaceId>
+								<pageId>LumisBlankPage</pageId>
+							</onClick>
+						</control:lum_addButton>
+						<control:lum_button id="startIncremental" text="STR_START_INCREMENTAL">
+							<rowAction />
+							<onClick type="processAction" processActionId="startIncremental">
+								<validators>
+									<validator type="selectedOne" controlId="migrationList.tabulardata" />
+								</validators>
+								<addParameters>
+									<parameter name="migrationId">
+										<value type="firstSelected" controlId="migrationList.tabulardata" />
+									</parameter>
+								</addParameters>
+							</onClick>
+						</control:lum_button>
+						<control:lum_button id="startUpdate" text="STR_START_UPDATE">
+							<rowAction />
+							<onClick type="processAction" processActionId="startUpdate">
+								<validators>
+									<validator type="selectedOne" controlId="migrationList.tabulardata" />
+								</validators>
+								<addParameters>
+									<parameter name="migrationId">
+										<value type="firstSelected" controlId="migrationList.tabulardata" />
+									</parameter>
+								</addParameters>
+							</onClick>
+						</control:lum_button>
+						<control:lum_button id="stopMigration" text="STR_STOP">
+							<rowAction />
+							<onClick type="processAction" processActionId="stopMigration">
+								<validators>
+									<validator type="selectedOne" controlId="migrationList.tabulardata" />
+								</validators>
+								<addParameters>
+									<parameter name="migrationId">
+										<value type="firstSelected" controlId="migrationList.tabulardata" />
+									</parameter>
+								</addParameters>
+							</onClick>
+						</control:lum_button>
+						<control:lum_button id="deleteMigration" text="STR_DELETE">
+							<rowAction />
+							<onClick type="processAction" processActionId="deleteMigration">
+								<validators>
+									<validator type="selectedOne" controlId="migrationList.tabulardata" />
+								</validators>
+								<addParameters>
+									<parameter name="migrationId">
+										<value type="firstSelected" controlId="migrationList.tabulardata" />
+									</parameter>
+								</addParameters>
+							</onClick>
+						</control:lum_button>
+						<control:lum_button id="undoMigration" text="STR_UNDO">
+							<rowAction />
+							<onClick type="processAction" processActionId="undoMigration">
+								<validators>
+									<validator type="selectedOne" controlId="migrationList.tabulardata" />
+								</validators>
+								<addParameters>
+									<parameter name="migrationId">
+										<value type="firstSelected" controlId="migrationList.tabulardata" />
+									</parameter>
+								</addParameters>
+							</onClick>
+						</control:lum_button>
+						<control:lum_button id="editSelection" text="STR_EDIT_SELECTION">
+							<rowAction />
+							<onClick type="popupRunTimeInterface" keepParentActive="false">
+								<interfaceId>editSelection</interfaceId>
+								<pageId>LumisBlankPage</pageId>
+								<validators>
+									<validator type="selectedOne" controlId="migrationList.tabulardata" />
+								</validators>
+								<addParameters>
+									<parameter name="migrationId">
+										<value type="firstSelected" controlId="migrationList.tabulardata" />
+									</parameter>
+								</addParameters>
+							</onClick>
+						</control:lum_button>
+						<control:lum_button id="migrationWarningsButton" text="STR_WARNINGS">
+							<rowAction />
+							<onClick type="popupRunTimeInterface" keepParentActive="false">
+								<interfaceId>migrationWarnings</interfaceId>
+								<pageId>LumisBlankPage</pageId>
+								<validators>
+									<validator type="selectedOne" controlId="migrationList.tabulardata" />
+								</validators>
+								<addParameters>
+									<parameter name="migrationId">
+										<value type="firstSelected" controlId="migrationList.tabulardata" />
+									</parameter>
+								</addParameters>
+							</onClick>
+						</control:lum_button>
+						<control:lum_button id="migrationErrorDetails" text="STR_ERROR_DETAILS">
+							<rowAction />
+							<onClick type="popupRunTimeInterface" keepParentActive="false">
+								<interfaceId>migrationError</interfaceId>
+								<pageId>LumisBlankPage</pageId>
+								<validators>
+									<validator type="selectedOne" controlId="migrationList.tabulardata" />
+								</validators>
+								<addParameters>
+									<parameter name="migrationId">
+										<value type="firstSelected" controlId="migrationList.tabulardata" />
+									</parameter>
+								</addParameters>
+							</onClick>
+						</control:lum_button>
+						<control:lum_button id="mapWidget" text="STR_MAP_WIDGET">
+							<rowAction />
+							<onClick type="popupRunTimeInterface" keepParentActive="false">
+								<interfaceId>widgetMapping</interfaceId>
+								<pageId>LumisBlankPage</pageId>
+								<validators>
+									<validator type="selectedOne" controlId="migrationList.tabulardata" />
+								</validators>
+								<addParameters>
+									<parameter name="migrationId">
+										<value type="firstSelected" controlId="migrationList.tabulardata" />
+									</parameter>
+								</addParameters>
+							</onClick>
+						</control:lum_button>
+					</control:lum_interfaceHeaderButtons>
+					<control:lum_adminList id="migrationList" dataId="id" sourceId="migrationAdmin" />
+					<control:lum_script id="migrationStatusPolling">
+						<script><![CDATA[
+						(function () {
+							var endpoint = g_LumisRootPath + "br/com/lumis/commons/contentmigrator/hierarchicalcontentmigration/status";
+							// Rendered by the server in the user's locale; keep one translate tag per line.
+							var labels = {
+								STOPPED: "<lum:translate>STR_STATUS_STOPPED</lum:translate>",
+								STOPPED_WITH_ERROR: "<lum:translate>STR_STATUS_STOPPED_WITH_ERROR</lum:translate>",
+								RUNNING: "<lum:translate>STR_STATUS_RUNNING</lum:translate>",
+								FINISHED: "<lum:translate>STR_STATUS_FINISHED</lum:translate>"
+							};
+							function refreshMigrationStatuses() {
+								fetch(endpoint, { credentials: "same-origin", headers: { "Accept": "application/json" } })
+									.then(function (response) { if (!response.ok) throw new Error("status request failed"); return response.json(); })
+									.then(function (items) {
+										items.forEach(function (item) {
+											var selector = 'input[name="migrationList.tabulardata"][value="' + item.id + '"]';
+											var row = document.querySelector(selector);
+											if (!row) return;
+											var itemRow = row.closest("li.lum-list-item");
+											if (!itemRow) return;
+											var status = itemRow.querySelector(".lum-field-id-statusLabel .lum-field-value");
+											var total = itemRow.querySelector(".lum-field-id-totalCount .lum-field-value");
+											var migrated = itemRow.querySelector(".lum-field-id-migratedCount .lum-field-value");
+											if (status) status.textContent = labels[item.status] || item.status;
+											if (total) total.textContent = item.totalCount;
+											if (migrated) migrated.textContent = item.migratedCount;
+										});
+									})
+									.catch(function () { /* Keep the last rendered status if polling fails. */ });
+							}
+							window.setInterval(refreshMigrationStatuses, 60000);
+						})();
+						]]></script>
+					</control:lum_script>
+				</control:lum_form>
+			</controls>
+			<!-- Process actions -->
+			<processActions>
+				<processAction id="startIncremental"
+						className="br.com.lumis.commons.contentmigrator.service.hierarchicalcontentmigration.processaction.MigrationProcessActionHandler">
+					<response type="doui_standardEmbedded" />
+				</processAction>
+				<processAction id="startUpdate"
+						className="br.com.lumis.commons.contentmigrator.service.hierarchicalcontentmigration.processaction.MigrationProcessActionHandler">
+					<response type="doui_standardEmbedded" />
+				</processAction>
+				<processAction id="stopMigration"
+						className="br.com.lumis.commons.contentmigrator.service.hierarchicalcontentmigration.processaction.MigrationProcessActionHandler">
+					<response type="doui_standardEmbedded" />
+				</processAction>
+				<processAction id="deleteMigration"
+						className="br.com.lumis.commons.contentmigrator.service.hierarchicalcontentmigration.processaction.MigrationProcessActionHandler">
+					<message type="confirm">STR_CONFIRM_DELETE_MIGRATION</message>
+					<response type="doui_standardEmbedded" />
+				</processAction>
+				<processAction id="undoMigration"
+						className="br.com.lumis.commons.contentmigrator.service.hierarchicalcontentmigration.processaction.MigrationProcessActionHandler">
+					<message type="confirm">STR_CONFIRM_UNDO_MIGRATION</message>
+					<response type="doui_standardEmbedded" />
+				</processAction>
+			</processActions>
+		</interface>
+		<interface id="addMigration">
+			<!-- Data sources -->
+			<sources>
+				<source id="migrationForm">
+					<fields inherit="all" />
+				</source>
+				<source id="originInstances" readData="always">
+					<fields inherit="all" />
+					<orderBy>
+						<field direction="ascending" id="serviceInstanceName" />
+					</orderBy>
+				</source>
+				<source id="destinationInstances" readData="always">
+					<fields inherit="all" />
+					<orderBy>
+						<field direction="ascending" id="serviceInstanceName" />
+					</orderBy>
+				</source>
+			</sources>
+			<!-- Controls -->
+			<controls>
+				<control:lum_form>
+					<control:lum_propertyPage>
+						<control:lum_autoLayoutFields>
+							<field id="name">
+								<label>
+									<control:lum_label text="STR_NAME" showRequired="true" />
+								</label>
+								<value>
+									<control:lum_inputText id="name" sourceId="migrationForm" dataId="name" maxLength="255">
+										<control:lum_requiredValueValidator />
+									</control:lum_inputText>
+								</value>
+							</field>
+							<field id="originServiceInstanceId">
+								<label>
+									<control:lum_label text="STR_ORIGIN" showRequired="true" />
+								</label>
+								<value>
+									<control:lum_dropDownList
+											id="originServiceInstanceId"
+											sourceId="migrationForm"
+											dataId="originServiceInstanceId"
+											optionsSourceId="originInstances"
+											valueFieldId="serviceInstanceId"
+											textFieldId="serviceInstanceName"
+											fieldName="STR_ORIGIN">
+										<control:lum_requiredValueValidator validateOnlyIfVisible="true" />
+										<setSourceParameter sourceId="destinationInstances" parameterName="originServiceInstanceId" />
+										<onChange type="script">
+											<script><![CDATA[document.getElementById("destServiceInstanceId").value = "";
+											if (window.contentmigratorHierarchyBrowser) { window.contentmigratorHierarchyBrowser.clear(); }]]></script>
+										</onChange>
+										<onChange type="renderAction" />
+									</control:lum_dropDownList>
+								</value>
+							</field>
+							<field id="destServiceInstanceId">
+								<label>
+									<control:lum_label text="STR_DESTINATION" showRequired="true" />
+								</label>
+								<value>
+									<control:lum_dropDownList
+											id="destServiceInstanceId"
+											sourceId="migrationForm"
+											dataId="destServiceInstanceId"
+											optionsSourceId="destinationInstances"
+											valueFieldId="serviceInstanceId"
+											textFieldId="serviceInstanceName"
+											fieldName="STR_DESTINATION">
+										<control:lum_requiredValueValidator validateOnlyIfVisible="true" />
+									</control:lum_dropDownList>
+								</value>
+							</field>
+							<field id="selectedContentIds">
+								<label>
+									<control:lum_label text="STR_CONTENTS_TO_MIGRATE" showRequired="true" />
+								</label>
+								<value>
+									<control:lum_div id="hcmBrowserHost">
+										<control:lum_inputHidden id="selectedContentIds" sourceId="migrationForm" dataId="selectedContentIds"
+												fieldName="STR_CONTENTS_TO_MIGRATE">
+											<control:lum_requiredValueValidator />
+										</control:lum_inputHidden>
+										<control:lum_html id="hcmBrowserMarkup">
+											<text><![CDATA[<style>
+.hcm-browser { border: 1px solid rgba(128,128,128,.45); border-radius: 4px; }
+.hcm-browser button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 2px 4px; }
+.hcm-browser button:hover:not(:disabled), .hcm-browser button:focus-visible { text-decoration: underline; }
+.hcm-crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; padding: 6px 8px; border-bottom: 1px solid rgba(128,128,128,.45); }
+.hcm-crumbs .hcm-sep { opacity: .6; }
+.hcm-crumbs button[aria-current="page"] { font-weight: bold; cursor: default; text-decoration: none; }
+.hcm-list { list-style: none; margin: 0; padding: 0; max-height: 260px; overflow-y: auto; }
+.hcm-list li { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-bottom: 1px solid rgba(128,128,128,.2); }
+.hcm-list li label { flex: 1 1 auto; display: flex; align-items: center; gap: 6px; margin: 0; cursor: pointer; font-weight: normal; }
+.hcm-list li.hcm-covered label { opacity: .75; cursor: default; }
+.hcm-badge { font-size: 11px; padding: 0 5px; border: 1px solid rgba(128,128,128,.6); border-radius: 8px; opacity: .85; white-space: nowrap; }
+.hcm-enter { white-space: nowrap; }
+.hcm-more { padding: 4px 8px; }
+.hcm-status { padding: 6px 8px; font-size: 12px; opacity: .85; }
+.hcm-empty { padding: 10px 8px; opacity: .75; }
+.hcm-sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); border: 0; white-space: nowrap; }
+</style>
+<div class="hcm-browser" id="hcmBrowser">
+	<nav class="hcm-crumbs" id="hcmCrumbs"></nav>
+	<ul class="hcm-list" id="hcmList"></ul>
+	<div class="hcm-more" id="hcmMore" hidden="hidden"><button type="button" id="hcmMoreButton"></button></div>
+	<div class="hcm-status" id="hcmStatus" aria-live="polite"></div>
+	<span class="hcm-sr" id="hcmCoveredHint"></span>
+	<span class="hcm-sr" id="hcmAnnounce" aria-live="polite"></span>
+</div>]]></text>
+										</control:lum_html>
+										<control:lum_script id="hcmBrowserScript">
+											<script><![CDATA[
+(function () {
+	var BASE = g_LumisRootPath + "br/com/lumis/commons/contentmigrator/hierarchicalcontentmigration";
+	var PAGE_SIZE = 200;
+	var COUNT_DELAY = 500;
+	// Rendered by the server in the user's locale; keep one translate tag per line.
+	var text = {
+		breadcrumb: "<lum:translate>STR_HCM_BREADCRUMB</lum:translate>",
+		root: "<lum:translate>STR_HCM_ROOT</lum:translate>",
+		rootLevel: "<lum:translate>STR_HCM_ROOT_LEVEL</lum:translate>",
+		level: "<lum:translate>STR_HCM_LEVEL</lum:translate>",
+		levelOpened: "<lum:translate>STR_HCM_LEVEL_OPENED</lum:translate>",
+		chooseOrigin: "<lum:translate>STR_HCM_CHOOSE_ORIGIN</lum:translate>",
+		loading: "<lum:translate>STR_HCM_LOADING</lum:translate>",
+		empty: "<lum:translate>STR_HCM_EMPTY</lum:translate>",
+		loadMore: "<lum:translate>STR_HCM_LOAD_MORE</lum:translate>",
+		childrenOne: "<lum:translate>STR_HCM_CHILDREN_ONE</lum:translate>",
+		childrenMany: "<lum:translate>STR_HCM_CHILDREN_MANY</lum:translate>",
+		childrenOfOne: "<lum:translate>STR_HCM_CHILDREN_OF_ONE</lum:translate>",
+		childrenOfMany: "<lum:translate>STR_HCM_CHILDREN_OF_MANY</lum:translate>",
+		covered: "<lum:translate>STR_HCM_COVERED</lum:translate>",
+		notPublished: "<lum:translate>STR_HCM_NOT_PUBLISHED</lum:translate>",
+		hidden: "<lum:translate>STR_HCM_HIDDEN</lum:translate>",
+		none: "<lum:translate>STR_HCM_NONE</lum:translate>",
+		markedOne: "<lum:translate>STR_HCM_MARKED_ONE</lum:translate>",
+		markedMany: "<lum:translate>STR_HCM_MARKED_MANY</lum:translate>",
+		contentsOne: "<lum:translate>STR_HCM_CONTENTS_ONE</lum:translate>",
+		contentsMany: "<lum:translate>STR_HCM_CONTENTS_MANY</lum:translate>",
+		itemsOne: "<lum:translate>STR_HCM_ITEMS_ONE</lum:translate>",
+		itemsMany: "<lum:translate>STR_HCM_ITEMS_MANY</lum:translate>",
+		unknownOne: "<lum:translate>STR_HCM_UNKNOWN_ONE</lum:translate>",
+		unknownMany: "<lum:translate>STR_HCM_UNKNOWN_MANY</lum:translate>",
+		error: "<lum:translate>STR_HCM_ERROR</lum:translate>",
+		forbidden: "<lum:translate>STR_HCM_FORBIDDEN</lum:translate>"
+	};
+
+	// marks: content id -> ids of its ancestors, root first, up to the parent.
+	var state = { originId: null, marks: new Map(), breadcrumb: [], items: [], total: 0, parentId: null,
+		generation: 0, countSeq: 0, countTimer: null, notice: "", summary: "", focusOnOpen: false };
+	var crumbs = document.getElementById("hcmCrumbs");
+	var list = document.getElementById("hcmList");
+	var more = document.getElementById("hcmMore");
+	var moreButton = document.getElementById("hcmMoreButton");
+	var status = document.getElementById("hcmStatus");
+	var announce = document.getElementById("hcmAnnounce");
+	var hidden = document.getElementById("selectedContentIds");
+
+	function format(template) {
+		var args = arguments;
+		return template.replace(/\{(\d+)\}/g, function (match, index) { return String(args[Number(index) + 1]); });
+	}
+	function plural(count, one, many) { return format(count === 1 ? one : many, count); }
+	function originId() {
+		var select = document.getElementById("originServiceInstanceId");
+		return select && select.value ? select.value : null;
+	}
+	function writeHidden() { hidden.value = Array.from(state.marks.keys()).join(","); }
+	function setStatus(message) { status.textContent = message; }
+	function el(tag, attributes, children) {
+		var node = document.createElement(tag);
+		Object.keys(attributes || {}).forEach(function (key) { node.setAttribute(key, attributes[key]); });
+		(children || []).forEach(function (child) { node.appendChild(typeof child === "string" ? document.createTextNode(child) : child); });
+		return node;
+	}
+	function currentPath() { return state.breadcrumb.map(function (crumb) { return crumb.contentId; }); }
+	function isCovered() { return state.breadcrumb.some(function (crumb) { return state.marks.has(crumb.contentId); }); }
+	function hasMarkedDescendant(contentId) {
+		var found = false;
+		state.marks.forEach(function (path) { if (path.indexOf(contentId) >= 0) { found = true; } });
+		return found;
+	}
+	function request(url, options) {
+		options = options || {};
+		options.credentials = "same-origin";
+		options.headers = Object.assign({ "Accept": "application/json" }, options.headers || {});
+		return fetch(url, options).then(function (response) {
+			if (response.status === 403) { throw new Error("forbidden"); }
+			if (!response.ok) { throw new Error("failed"); }
+			return response.json();
+		});
+	}
+	function failMessage(error) { return error && error.message === "forbidden" ? text.forbidden : text.error; }
+	function postSelection(contentIds) {
+		return request(BASE + "/selection", { method: "POST", headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ serviceInstanceId: state.originId, contentIds: contentIds }) });
+	}
+
+	function levelLabel() {
+		var parent = state.breadcrumb[state.breadcrumb.length - 1];
+		return parent ? format(text.level, parent.title || parent.contentId) : text.rootLevel;
+	}
+	function renderCrumbs() {
+		crumbs.textContent = "";
+		crumbs.setAttribute("aria-label", text.breadcrumb);
+		var trail = [{ contentId: null, title: text.root }].concat(state.breadcrumb);
+		trail.forEach(function (crumb, index) {
+			var isLast = index === trail.length - 1;
+			var button = el("button", { type: "button" }, [crumb.title || crumb.contentId || ""]);
+			if (isLast) { button.setAttribute("aria-current", "page"); }
+			button.addEventListener("click", function () { if (!isLast) { open(crumb.contentId); } });
+			crumbs.appendChild(button);
+			if (!isLast) { crumbs.appendChild(el("span", { "class": "hcm-sep", "aria-hidden": "true" }, ["›"])); }
+		});
+	}
+	function renderItem(item) {
+		var checkbox = el("input", { type: "checkbox", "data-content-id": item.contentId });
+		checkbox.addEventListener("change", function () { toggle(item.contentId, checkbox.checked); });
+		var label = el("label", {}, [checkbox, el("span", {}, [item.title || item.contentId])]);
+		if (!item.published) { label.appendChild(el("span", { "class": "hcm-badge" }, [text.notPublished])); }
+		if (item.hidden) { label.appendChild(el("span", { "class": "hcm-badge" }, [text.hidden])); }
+		var li = el("li", { "data-content-id": item.contentId }, [label]);
+		if (item.hasChildren) {
+			var title = item.title || item.contentId;
+			var enter = el("button", { type: "button", "class": "hcm-enter",
+				"aria-label": format(item.childCount === 1 ? text.childrenOfOne : text.childrenOfMany, item.childCount, title) },
+				[el("span", { "aria-hidden": "true" }, ["▸ "]), plural(item.childCount, text.childrenOne, text.childrenMany)]);
+			enter.addEventListener("click", function () { open(item.contentId); });
+			li.appendChild(enter);
+		}
+		return li;
+	}
+	function renderList(items) {
+		list.setAttribute("aria-label", levelLabel());
+		more.hidden = state.items.length >= state.total;
+		if (!state.items.length) { list.appendChild(el("li", { "class": "hcm-empty" }, [text.empty])); return null; }
+		var first = null;
+		items.forEach(function (item) {
+			var li = renderItem(item);
+			if (!first) { first = li.querySelector("input"); }
+			list.appendChild(li);
+		});
+		return first;
+	}
+	// Updates the existing checkboxes in place, so the focused element is never replaced.
+	function updateMarks() {
+		var covered = isCovered();
+		list.querySelectorAll("input[data-content-id]").forEach(function (checkbox) {
+			var contentId = checkbox.getAttribute("data-content-id");
+			var marked = state.marks.has(contentId);
+			checkbox.checked = covered || marked;
+			checkbox.disabled = covered;
+			checkbox.indeterminate = !covered && !marked && hasMarkedDescendant(contentId);
+			if (covered) { checkbox.setAttribute("aria-describedby", "hcmCoveredHint"); }
+			else { checkbox.removeAttribute("aria-describedby"); }
+			checkbox.closest("li").classList.toggle("hcm-covered", covered);
+		});
+	}
+
+	function load(parentId, offset) {
+		var origin = state.originId;
+		var generation = ++state.generation;
+		list.setAttribute("aria-busy", "true");
+		moreButton.disabled = true;
+		if (!offset) { setStatus(text.loading); }
+		var url = BASE + "/contents?serviceInstanceId=" + encodeURIComponent(origin) + (parentId ? "&parentContentId=" + encodeURIComponent(parentId) : "")
+			+ "&offset=" + offset + "&limit=" + PAGE_SIZE;
+		return request(url).then(function (page) {
+			if (generation !== state.generation) { return null; }
+			list.removeAttribute("aria-busy");
+			moreButton.disabled = false;
+			return page;
+		}).catch(function (error) {
+			if (generation !== state.generation) { return null; }
+			list.removeAttribute("aria-busy");
+			moreButton.disabled = false;
+			setStatus(failMessage(error));
+			return null;
+		});
+	}
+	function open(parentId) {
+		load(parentId, 0).then(function (page) {
+			if (!page) { return; }
+			state.parentId = parentId;
+			state.breadcrumb = page.breadcrumb || [];
+			state.items = page.items || [];
+			state.total = page.total || 0;
+			renderCrumbs();
+			list.textContent = "";
+			var first = renderList(state.items);
+			updateMarks();
+			showSummary();
+			announce.textContent = format(text.levelOpened, levelLabel());
+			if (first && state.focusOnOpen) { first.focus(); }
+			state.focusOnOpen = true;
+		});
+	}
+	function loadMore() {
+		load(state.parentId, state.items.length).then(function (page) {
+			if (!page) { return; }
+			var items = page.items || [];
+			state.items = state.items.concat(items);
+			state.total = page.total || 0;
+			var first = renderList(items);
+			updateMarks();
+			if (first) { first.focus(); }
+		});
+	}
+	function toggle(contentId, checked) {
+		if (checked) {
+			if (isCovered()) { updateMarks(); return; }
+			state.marks.forEach(function (path, markedId) { if (path.indexOf(contentId) >= 0) { state.marks.delete(markedId); } });
+			state.marks.set(contentId, currentPath());
+		} else {
+			state.marks.delete(contentId);
+		}
+		writeHidden();
+		updateMarks();
+		scheduleCount();
+	}
+	function showSummary(selection) {
+		var prefix = state.notice ? state.notice + " " : "";
+		if (!state.marks.size) { setStatus(prefix + text.none); return; }
+		if (selection) {
+			state.summary = [plural(state.marks.size, text.markedOne, text.markedMany),
+				plural(selection.contentCount, text.contentsOne, text.contentsMany),
+				plural(selection.localeCount, text.itemsOne, text.itemsMany)].join("; ") + ".";
+		}
+		setStatus(prefix + state.summary);
+	}
+	// Counts never change the marks; a late response or error is ignored.
+	function scheduleCount() {
+		var seq = ++state.countSeq;
+		window.clearTimeout(state.countTimer);
+		if (!state.marks.size) { showSummary(); return; }
+		state.countTimer = window.setTimeout(function () {
+			postSelection(Array.from(state.marks.keys())).then(function (selection) {
+				if (seq === state.countSeq) { showSummary(selection); }
+			}).catch(function (error) {
+				if (seq === state.countSeq) { setStatus(failMessage(error)); }
+			});
+		}, COUNT_DELAY);
+	}
+	// Restores the marks kept in the hidden field after any re-render of the form.
+	function restore() {
+		var ids = hidden.value ? hidden.value.split(",").filter(function (id) { return id; }) : [];
+		ids.forEach(function (id) { state.marks.set(id, []); });
+		if (!ids.length) { return; }
+		var seq = ++state.countSeq;
+		postSelection(ids).then(function (selection) {
+			var unknown = selection.unknownContentIds || [];
+			unknown.forEach(function (id) { state.marks.delete(id); });
+			var paths = selection.paths || {};
+			state.marks.forEach(function (path, id) { if (paths[id]) { state.marks.set(id, paths[id]); } });
+			if (unknown.length) { state.notice = plural(unknown.length, text.unknownOne, text.unknownMany); writeHidden(); }
+			updateMarks();
+			if (seq === state.countSeq && !unknown.length) { showSummary(selection); }
+			else { scheduleCount(); }
+		}).catch(function (error) {
+			if (seq === state.countSeq) { setStatus(failMessage(error)); }
+		});
+	}
+	function init() {
+		state.originId = originId();
+		state.marks = new Map();
+		state.focusOnOpen = false;
+		moreButton.textContent = text.loadMore;
+		document.getElementById("hcmCoveredHint").textContent = text.covered;
+		renderCrumbs();
+		list.textContent = "";
+		if (!state.originId) { writeHidden(); setStatus(text.chooseOrigin); return; }
+		restore();
+		open(null);
+	}
+	// Only a change of origin discards the marks.
+	function clear() {
+		state.marks = new Map();
+		state.notice = "";
+		state.summary = "";
+		state.countSeq++;
+		window.clearTimeout(state.countTimer);
+		writeHidden();
+		updateMarks();
+	}
+	moreButton.addEventListener("click", loadMore);
+	window.contentmigratorHierarchyBrowser = { clear: clear };
+	init();
+})();
+											]]></script>
+										</control:lum_script>
+									</control:lum_div>
+								</value>
+							</field>
+						</control:lum_autoLayoutFields>
+						<control:lum_footer>
+							<control:lum_interfaceButtons>
+								<control:lum_button id="createMigration" text="STR_CREATE" isPrimary="true">
+									<onClick type="processAction" processActionId="createMigration" />
+								</control:lum_button>
+							</control:lum_interfaceButtons>
+						</control:lum_footer>
+					</control:lum_propertyPage>
+				</control:lum_form>
+			</controls>
+			<!-- Process actions -->
+			<processActions>
+				<processAction id="createMigration"
+						className="br.com.lumis.commons.contentmigrator.service.hierarchicalcontentmigration.processaction.MigrationProcessActionHandler">
+					<response type="doui_refreshParent" />
+					<response type="doui_closeWindow" />
+				</processAction>
+			</processActions>
+		</interface>
+		<interface id="editSelection">
+			<sources>
+				<source id="selectionForm" readData="always"><fields inherit="all" /></source>
+			</sources>
+			<controls>
+				<control:lum_form>
+					<control:lum_inputHidden id="migrationId" sourceId="selectionForm" dataId="migrationId" />
+					<control:lum_inputHidden id="originServiceInstanceId" sourceId="selectionForm" dataId="originServiceInstanceId" />
+					<control:lum_propertyPage>
+						<control:lum_label text="STR_SELECTION_HELP" />
+						<control:lum_autoLayoutFields>
+							<field id="selectedContentIds">
+								<label>
+									<control:lum_label text="STR_CONTENTS_TO_MIGRATE" showRequired="true" />
+								</label>
+								<value>
+									<control:lum_div id="hcmBrowserHost">
+										<control:lum_inputHidden id="selectedContentIds" sourceId="selectionForm" dataId="selectedContentIds"
+												fieldName="STR_CONTENTS_TO_MIGRATE">
+											<control:lum_requiredValueValidator />
+										</control:lum_inputHidden>
+										<control:lum_html id="hcmBrowserMarkup">
+											<text><![CDATA[<style>
+.hcm-browser { border: 1px solid rgba(128,128,128,.45); border-radius: 4px; }
+.hcm-browser button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 2px 4px; }
+.hcm-browser button:hover:not(:disabled), .hcm-browser button:focus-visible { text-decoration: underline; }
+.hcm-crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; padding: 6px 8px; border-bottom: 1px solid rgba(128,128,128,.45); }
+.hcm-crumbs .hcm-sep { opacity: .6; }
+.hcm-crumbs button[aria-current="page"] { font-weight: bold; cursor: default; text-decoration: none; }
+.hcm-list { list-style: none; margin: 0; padding: 0; max-height: 260px; overflow-y: auto; }
+.hcm-list li { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-bottom: 1px solid rgba(128,128,128,.2); }
+.hcm-list li label { flex: 1 1 auto; display: flex; align-items: center; gap: 6px; margin: 0; cursor: pointer; font-weight: normal; }
+.hcm-list li.hcm-covered label { opacity: .75; cursor: default; }
+.hcm-badge { font-size: 11px; padding: 0 5px; border: 1px solid rgba(128,128,128,.6); border-radius: 8px; opacity: .85; white-space: nowrap; }
+.hcm-enter { white-space: nowrap; }
+.hcm-more { padding: 4px 8px; }
+.hcm-status { padding: 6px 8px; font-size: 12px; opacity: .85; }
+.hcm-empty { padding: 10px 8px; opacity: .75; }
+.hcm-sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); border: 0; white-space: nowrap; }
+</style>
+<div class="hcm-browser" id="hcmBrowser">
+	<nav class="hcm-crumbs" id="hcmCrumbs"></nav>
+	<ul class="hcm-list" id="hcmList"></ul>
+	<div class="hcm-more" id="hcmMore" hidden="hidden"><button type="button" id="hcmMoreButton"></button></div>
+	<div class="hcm-status" id="hcmStatus" aria-live="polite"></div>
+	<span class="hcm-sr" id="hcmCoveredHint"></span>
+	<span class="hcm-sr" id="hcmAnnounce" aria-live="polite"></span>
+</div>]]></text>
+										</control:lum_html>
+										<control:lum_script id="hcmBrowserScript">
+											<script><![CDATA[
+(function () {
+	var BASE = g_LumisRootPath + "br/com/lumis/commons/contentmigrator/hierarchicalcontentmigration";
+	var PAGE_SIZE = 200;
+	var COUNT_DELAY = 500;
+	// Rendered by the server in the user's locale; keep one translate tag per line.
+	var text = {
+		breadcrumb: "<lum:translate>STR_HCM_BREADCRUMB</lum:translate>",
+		root: "<lum:translate>STR_HCM_ROOT</lum:translate>",
+		rootLevel: "<lum:translate>STR_HCM_ROOT_LEVEL</lum:translate>",
+		level: "<lum:translate>STR_HCM_LEVEL</lum:translate>",
+		levelOpened: "<lum:translate>STR_HCM_LEVEL_OPENED</lum:translate>",
+		chooseOrigin: "<lum:translate>STR_HCM_CHOOSE_ORIGIN</lum:translate>",
+		loading: "<lum:translate>STR_HCM_LOADING</lum:translate>",
+		empty: "<lum:translate>STR_HCM_EMPTY</lum:translate>",
+		loadMore: "<lum:translate>STR_HCM_LOAD_MORE</lum:translate>",
+		childrenOne: "<lum:translate>STR_HCM_CHILDREN_ONE</lum:translate>",
+		childrenMany: "<lum:translate>STR_HCM_CHILDREN_MANY</lum:translate>",
+		childrenOfOne: "<lum:translate>STR_HCM_CHILDREN_OF_ONE</lum:translate>",
+		childrenOfMany: "<lum:translate>STR_HCM_CHILDREN_OF_MANY</lum:translate>",
+		covered: "<lum:translate>STR_HCM_COVERED</lum:translate>",
+		notPublished: "<lum:translate>STR_HCM_NOT_PUBLISHED</lum:translate>",
+		hidden: "<lum:translate>STR_HCM_HIDDEN</lum:translate>",
+		none: "<lum:translate>STR_HCM_NONE</lum:translate>",
+		markedOne: "<lum:translate>STR_HCM_MARKED_ONE</lum:translate>",
+		markedMany: "<lum:translate>STR_HCM_MARKED_MANY</lum:translate>",
+		contentsOne: "<lum:translate>STR_HCM_CONTENTS_ONE</lum:translate>",
+		contentsMany: "<lum:translate>STR_HCM_CONTENTS_MANY</lum:translate>",
+		itemsOne: "<lum:translate>STR_HCM_ITEMS_ONE</lum:translate>",
+		itemsMany: "<lum:translate>STR_HCM_ITEMS_MANY</lum:translate>",
+		unknownOne: "<lum:translate>STR_HCM_UNKNOWN_ONE</lum:translate>",
+		unknownMany: "<lum:translate>STR_HCM_UNKNOWN_MANY</lum:translate>",
+		error: "<lum:translate>STR_HCM_ERROR</lum:translate>",
+		forbidden: "<lum:translate>STR_HCM_FORBIDDEN</lum:translate>"
+	};
+
+	// marks: content id -> ids of its ancestors, root first, up to the parent.
+	var state = { originId: null, marks: new Map(), breadcrumb: [], items: [], total: 0, parentId: null,
+		generation: 0, countSeq: 0, countTimer: null, notice: "", summary: "", focusOnOpen: false };
+	var crumbs = document.getElementById("hcmCrumbs");
+	var list = document.getElementById("hcmList");
+	var more = document.getElementById("hcmMore");
+	var moreButton = document.getElementById("hcmMoreButton");
+	var status = document.getElementById("hcmStatus");
+	var announce = document.getElementById("hcmAnnounce");
+	var hidden = document.getElementById("selectedContentIds");
+
+	function format(template) {
+		var args = arguments;
+		return template.replace(/\{(\d+)\}/g, function (match, index) { return String(args[Number(index) + 1]); });
+	}
+	function plural(count, one, many) { return format(count === 1 ? one : many, count); }
+	function originId() {
+		var select = document.getElementById("originServiceInstanceId");
+		return select && select.value ? select.value : null;
+	}
+	function writeHidden() { hidden.value = Array.from(state.marks.keys()).join(","); }
+	function setStatus(message) { status.textContent = message; }
+	function el(tag, attributes, children) {
+		var node = document.createElement(tag);
+		Object.keys(attributes || {}).forEach(function (key) { node.setAttribute(key, attributes[key]); });
+		(children || []).forEach(function (child) { node.appendChild(typeof child === "string" ? document.createTextNode(child) : child); });
+		return node;
+	}
+	function currentPath() { return state.breadcrumb.map(function (crumb) { return crumb.contentId; }); }
+	function isCovered() { return state.breadcrumb.some(function (crumb) { return state.marks.has(crumb.contentId); }); }
+	function hasMarkedDescendant(contentId) {
+		var found = false;
+		state.marks.forEach(function (path) { if (path.indexOf(contentId) >= 0) { found = true; } });
+		return found;
+	}
+	function request(url, options) {
+		options = options || {};
+		options.credentials = "same-origin";
+		options.headers = Object.assign({ "Accept": "application/json" }, options.headers || {});
+		return fetch(url, options).then(function (response) {
+			if (response.status === 403) { throw new Error("forbidden"); }
+			if (!response.ok) { throw new Error("failed"); }
+			return response.json();
+		});
+	}
+	function failMessage(error) { return error && error.message === "forbidden" ? text.forbidden : text.error; }
+	function postSelection(contentIds) {
+		return request(BASE + "/selection", { method: "POST", headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ serviceInstanceId: state.originId, contentIds: contentIds }) });
+	}
+
+	function levelLabel() {
+		var parent = state.breadcrumb[state.breadcrumb.length - 1];
+		return parent ? format(text.level, parent.title || parent.contentId) : text.rootLevel;
+	}
+	function renderCrumbs() {
+		crumbs.textContent = "";
+		crumbs.setAttribute("aria-label", text.breadcrumb);
+		var trail = [{ contentId: null, title: text.root }].concat(state.breadcrumb);
+		trail.forEach(function (crumb, index) {
+			var isLast = index === trail.length - 1;
+			var button = el("button", { type: "button" }, [crumb.title || crumb.contentId || ""]);
+			if (isLast) { button.setAttribute("aria-current", "page"); }
+			button.addEventListener("click", function () { if (!isLast) { open(crumb.contentId); } });
+			crumbs.appendChild(button);
+			if (!isLast) { crumbs.appendChild(el("span", { "class": "hcm-sep", "aria-hidden": "true" }, ["›"])); }
+		});
+	}
+	function renderItem(item) {
+		var checkbox = el("input", { type: "checkbox", "data-content-id": item.contentId });
+		checkbox.addEventListener("change", function () { toggle(item.contentId, checkbox.checked); });
+		var label = el("label", {}, [checkbox, el("span", {}, [item.title || item.contentId])]);
+		if (!item.published) { label.appendChild(el("span", { "class": "hcm-badge" }, [text.notPublished])); }
+		if (item.hidden) { label.appendChild(el("span", { "class": "hcm-badge" }, [text.hidden])); }
+		var li = el("li", { "data-content-id": item.contentId }, [label]);
+		if (item.hasChildren) {
+			var title = item.title || item.contentId;
+			var enter = el("button", { type: "button", "class": "hcm-enter",
+				"aria-label": format(item.childCount === 1 ? text.childrenOfOne : text.childrenOfMany, item.childCount, title) },
+				[el("span", { "aria-hidden": "true" }, ["▸ "]), plural(item.childCount, text.childrenOne, text.childrenMany)]);
+			enter.addEventListener("click", function () { open(item.contentId); });
+			li.appendChild(enter);
+		}
+		return li;
+	}
+	function renderList(items) {
+		list.setAttribute("aria-label", levelLabel());
+		more.hidden = state.items.length >= state.total;
+		if (!state.items.length) { list.appendChild(el("li", { "class": "hcm-empty" }, [text.empty])); return null; }
+		var first = null;
+		items.forEach(function (item) {
+			var li = renderItem(item);
+			if (!first) { first = li.querySelector("input"); }
+			list.appendChild(li);
+		});
+		return first;
+	}
+	// Updates the existing checkboxes in place, so the focused element is never replaced.
+	function updateMarks() {
+		var covered = isCovered();
+		list.querySelectorAll("input[data-content-id]").forEach(function (checkbox) {
+			var contentId = checkbox.getAttribute("data-content-id");
+			var marked = state.marks.has(contentId);
+			checkbox.checked = covered || marked;
+			checkbox.disabled = covered;
+			checkbox.indeterminate = !covered && !marked && hasMarkedDescendant(contentId);
+			if (covered) { checkbox.setAttribute("aria-describedby", "hcmCoveredHint"); }
+			else { checkbox.removeAttribute("aria-describedby"); }
+			checkbox.closest("li").classList.toggle("hcm-covered", covered);
+		});
+	}
+
+	function load(parentId, offset) {
+		var origin = state.originId;
+		var generation = ++state.generation;
+		list.setAttribute("aria-busy", "true");
+		moreButton.disabled = true;
+		if (!offset) { setStatus(text.loading); }
+		var url = BASE + "/contents?serviceInstanceId=" + encodeURIComponent(origin) + (parentId ? "&parentContentId=" + encodeURIComponent(parentId) : "")
+			+ "&offset=" + offset + "&limit=" + PAGE_SIZE;
+		return request(url).then(function (page) {
+			if (generation !== state.generation) { return null; }
+			list.removeAttribute("aria-busy");
+			moreButton.disabled = false;
+			return page;
+		}).catch(function (error) {
+			if (generation !== state.generation) { return null; }
+			list.removeAttribute("aria-busy");
+			moreButton.disabled = false;
+			setStatus(failMessage(error));
+			return null;
+		});
+	}
+	function open(parentId) {
+		load(parentId, 0).then(function (page) {
+			if (!page) { return; }
+			state.parentId = parentId;
+			state.breadcrumb = page.breadcrumb || [];
+			state.items = page.items || [];
+			state.total = page.total || 0;
+			renderCrumbs();
+			list.textContent = "";
+			var first = renderList(state.items);
+			updateMarks();
+			showSummary();
+			announce.textContent = format(text.levelOpened, levelLabel());
+			if (first && state.focusOnOpen) { first.focus(); }
+			state.focusOnOpen = true;
+		});
+	}
+	function loadMore() {
+		load(state.parentId, state.items.length).then(function (page) {
+			if (!page) { return; }
+			var items = page.items || [];
+			state.items = state.items.concat(items);
+			state.total = page.total || 0;
+			var first = renderList(items);
+			updateMarks();
+			if (first) { first.focus(); }
+		});
+	}
+	function toggle(contentId, checked) {
+		if (checked) {
+			if (isCovered()) { updateMarks(); return; }
+			state.marks.forEach(function (path, markedId) { if (path.indexOf(contentId) >= 0) { state.marks.delete(markedId); } });
+			state.marks.set(contentId, currentPath());
+		} else {
+			state.marks.delete(contentId);
+		}
+		writeHidden();
+		updateMarks();
+		scheduleCount();
+	}
+	function showSummary(selection) {
+		var prefix = state.notice ? state.notice + " " : "";
+		if (!state.marks.size) { setStatus(prefix + text.none); return; }
+		if (selection) {
+			state.summary = [plural(state.marks.size, text.markedOne, text.markedMany),
+				plural(selection.contentCount, text.contentsOne, text.contentsMany),
+				plural(selection.localeCount, text.itemsOne, text.itemsMany)].join("; ") + ".";
+		}
+		setStatus(prefix + state.summary);
+	}
+	// Counts never change the marks; a late response or error is ignored.
+	function scheduleCount() {
+		var seq = ++state.countSeq;
+		window.clearTimeout(state.countTimer);
+		if (!state.marks.size) { showSummary(); return; }
+		state.countTimer = window.setTimeout(function () {
+			postSelection(Array.from(state.marks.keys())).then(function (selection) {
+				if (seq === state.countSeq) { showSummary(selection); }
+			}).catch(function (error) {
+				if (seq === state.countSeq) { setStatus(failMessage(error)); }
+			});
+		}, COUNT_DELAY);
+	}
+	// Restores the marks kept in the hidden field after any re-render of the form.
+	function restore() {
+		var ids = hidden.value ? hidden.value.split(",").filter(function (id) { return id; }) : [];
+		ids.forEach(function (id) { state.marks.set(id, []); });
+		if (!ids.length) { return; }
+		var seq = ++state.countSeq;
+		postSelection(ids).then(function (selection) {
+			var unknown = selection.unknownContentIds || [];
+			unknown.forEach(function (id) { state.marks.delete(id); });
+			var paths = selection.paths || {};
+			state.marks.forEach(function (path, id) { if (paths[id]) { state.marks.set(id, paths[id]); } });
+			if (unknown.length) { state.notice = plural(unknown.length, text.unknownOne, text.unknownMany); writeHidden(); }
+			updateMarks();
+			if (seq === state.countSeq && !unknown.length) { showSummary(selection); }
+			else { scheduleCount(); }
+		}).catch(function (error) {
+			if (seq === state.countSeq) { setStatus(failMessage(error)); }
+		});
+	}
+	function init() {
+		state.originId = originId();
+		state.marks = new Map();
+		state.focusOnOpen = false;
+		moreButton.textContent = text.loadMore;
+		document.getElementById("hcmCoveredHint").textContent = text.covered;
+		renderCrumbs();
+		list.textContent = "";
+		if (!state.originId) { writeHidden(); setStatus(text.chooseOrigin); return; }
+		restore();
+		open(null);
+	}
+	// Only a change of origin discards the marks.
+	function clear() {
+		state.marks = new Map();
+		state.notice = "";
+		state.summary = "";
+		state.countSeq++;
+		window.clearTimeout(state.countTimer);
+		writeHidden();
+		updateMarks();
+	}
+	moreButton.addEventListener("click", loadMore);
+	window.contentmigratorHierarchyBrowser = { clear: clear };
+	init();
+})();
+											]]></script>
+										</control:lum_script>
+									</control:lum_div>
+								</value>
+							</field>
+						</control:lum_autoLayoutFields>
+						<control:lum_footer>
+							<control:lum_interfaceButtons>
+								<control:lum_button id="updateSelection" text="STR_SAVE_SELECTION" isPrimary="true">
+									<onClick type="processAction" processActionId="updateSelection" />
+								</control:lum_button>
+							</control:lum_interfaceButtons>
+						</control:lum_footer>
+					</control:lum_propertyPage>
+				</control:lum_form>
+			</controls>
+			<processActions>
+				<processAction id="updateSelection"
+						className="br.com.lumis.commons.contentmigrator.service.hierarchicalcontentmigration.processaction.MigrationProcessActionHandler">
+					<response type="doui_refreshParent" />
+					<response type="doui_closeWindow" />
+				</processAction>
+			</processActions>
+		</interface>
+		<interface id="migrationWarnings">
+			<sources>
+				<source id="migrationWarnings" readData="always">
+					<fields inherit="all" />
+				</source>
+			</sources>
+			<controls>
+				<control:lum_form>
+					<control:lum_interfaceHeader />
+					<control:lum_list id="warningList" dataId="id" sourceId="migrationWarnings" />
+				</control:lum_form>
+			</controls>
+		</interface>
+		<interface id="migrationError">
+			<!-- Data sources -->
+			<sources>
+				<source id="migrationError" readData="always">
+					<fields inherit="all" />
+				</source>
+			</sources>
+			<!-- Controls -->
+			<controls>
+				<control:lum_form>
+					<control:lum_propertyPage>
+						<control:lum_autoLayoutFields>
+							<field id="errorMessage">
+								<label>
+									<control:lum_label text="STR_ERRORMESSAGE" />
+								</label>
+								<value>
+									<control:lum_inputText id="errorMessage" sourceId="migrationError" dataId="errorMessage" readonly="true" />
+								</value>
+							</field>
+							<field id="errorStack">
+								<label>
+									<control:lum_label text="STR_ERRORSTACK" />
+								</label>
+								<value>
+									<control:lum_inputTextArea
+											id="errorStack"
+											sourceId="migrationError"
+											dataId="errorStack"
+											rows="18"
+											style="width:100%;overflow:auto;font-family:monospace"
+											readonly="true" />
+								</value>
+							</field>
+						</control:lum_autoLayoutFields>
+					</control:lum_propertyPage>
+				</control:lum_form>
+			</controls>
+		</interface>
+		<interface id="widgetMapping">
+			<!-- Data sources -->
+			<sources>
+				<source id="widgetMapping" readData="always">
+					<fields inherit="all" />
+				</source>
+				<source id="destinationWidgets" readData="always">
+					<fields inherit="all" />
+				</source>
+				<source id="widgetMappingForm">
+					<fields inherit="all" />
+				</source>
+			</sources>
+			<!-- Controls -->
+			<controls>
+				<control:lum_form>
+					<control:lum_propertyPage>
+						<control:lum_label text="STR_WIDGET_MAPPING_INSTRUCTION" />
+						<control:lum_inputHidden id="migrationId" sourceId="widgetMapping" dataId="migrationId" />
+						<control:lum_autoLayoutFields>
+							<field id="title">
+								<label>
+									<control:lum_label text="STR_BLOCKED_CONTENT_TITLE" />
+								</label>
+								<value>
+									<control:lum_inputText id="blockedTitle" sourceId="widgetMapping" dataId="title" readonly="true" />
+								</value>
+							</field>
+							<field id="introduction">
+								<label>
+									<control:lum_label text="STR_BLOCKED_CONTENT_INTRODUCTION" />
+								</label>
+								<value>
+									<control:lum_inputTextArea
+											id="blockedIntroduction"
+											sourceId="widgetMapping"
+											dataId="introduction"
+											rows="4"
+											style="width:100%"
+											readonly="true" />
+								</value>
+							</field>
+							<field id="originWidget">
+								<label>
+									<control:lum_label text="STR_ORIGIN_WIDGET" />
+								</label>
+								<value>
+									<control:lum_inputText id="originWidget" sourceId="widgetMapping" dataId="originWidgetName" readonly="true" />
+								</value>
+							</field>
+							<field id="destWidgetContentId">
+								<label>
+									<control:lum_label text="STR_DESTINATION_WIDGET" showRequired="true" />
+								</label>
+								<value>
+									<control:lum_dropDownList
+											id="destWidgetContentId"
+											sourceId="widgetMappingForm"
+											dataId="destWidgetContentId"
+											optionsSourceId="destinationWidgets"
+											valueFieldId="widgetContentId"
+											textFieldId="widgetName"
+											fieldName="STR_DESTINATION_WIDGET">
+										<control:lum_requiredValueValidator validateOnlyIfVisible="true" />
+										<setSourceParameter sourceId="destinationWidgets" parameterName="migrationId" />
+									</control:lum_dropDownList>
+								</value>
+							</field>
+						</control:lum_autoLayoutFields>
+						<control:lum_footer>
+							<control:lum_interfaceButtons>
+								<control:lum_button id="saveWidgetMapping" text="STR_SAVE_WIDGET_MAPPING" isPrimary="true">
+									<onClick type="processAction" processActionId="saveWidgetMapping" />
+								</control:lum_button>
+							</control:lum_interfaceButtons>
+						</control:lum_footer>
+					</control:lum_propertyPage>
+				</control:lum_form>
+			</controls>
+			<!-- Process actions -->
+			<processActions>
+				<processAction id="saveWidgetMapping"
+						className="br.com.lumis.commons.contentmigrator.service.hierarchicalcontentmigration.processaction.WidgetMappingProcessActionHandler">
+					<response type="doui_refreshParent" />
+					<response type="doui_closeWindow" />
+				</processAction>
+			</processActions>
+		</interface>
+	</interfaces>
+</doui:douiDefinition>

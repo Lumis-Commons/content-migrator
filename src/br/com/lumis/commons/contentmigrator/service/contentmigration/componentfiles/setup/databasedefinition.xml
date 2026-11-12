@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<databaseDefinition xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.lumis.com.br/lumisportal/xsd/databasedefinition.xsd">
+
+	<table name="lum_cmig_Migration">
+		<fields>
+			<field name="id" type="guid" isNotNull="true" />
+			<field name="name" type="string" size="255" isNotNull="true" />
+			<field name="serviceId" type="string" size="255" isNotNull="true" />
+			<field name="originServiceInstanceId" type="guid" isNotNull="true" />
+			<field name="destServiceInstanceId" type="guid" isNotNull="true" />
+			<field name="updateMode" type="string" size="30" isNotNull="true" />
+			<field name="operation" type="string" size="10" isNotNull="true" />
+			<field name="status" type="string" size="30" isNotNull="true" />
+			<field name="stopRequested" type="boolean" isNotNull="true" />
+			<field name="totalCount" type="integer" isNotNull="true" />
+			<field name="migratedCount" type="integer" isNotNull="true" />
+			<field name="heartbeat" type="dateTime" />
+			<field name="createdDate" type="dateTime" isNotNull="true" />
+			<field name="startDate" type="dateTime" />
+			<field name="endDate" type="dateTime" />
+			<field name="author" type="string" size="255" />
+			<field name="errorType" type="string" size="40" />
+			<field name="errorMessage" type="string" size="1000" />
+			<field name="errorStack" type="text" />
+			<field name="blockingOriginItemId" type="string" size="255" />
+			<field name="blockingWidgetContentId" type="guid" />
+		</fields>
+		<constraints>
+			<constraint name="LUM_PK_CMIG_MIGRATION" type="primaryKey">
+				<fields>
+					<field name="id"/>
+				</fields>
+			</constraint>
+			<constraint name="LUM_UN_CMIG_MIGRATION_PAIR" type="unique">
+				<fields>
+					<field name="originServiceInstanceId"/>
+					<field name="destServiceInstanceId"/>
+				</fields>
+			</constraint>
+		</constraints>
+	</table>
+
+	<table name="lum_cmig_MigItemMap">
+		<fields>
+			<field name="id" type="guid" isNotNull="true" />
+			<field name="kind" type="string" size="20" isNotNull="true" />
+			<field name="serviceId" type="string" size="255" isNotNull="true" />
+			<field name="sourceId" type="string" size="100" isNotNull="true" />
+			<field name="locale" type="string" size="10" />
+			<field name="warnings" type="text" />
+			<field name="destCreated" type="boolean" isNotNull="true" />
+			<field name="originServiceInstanceId" type="guid" isNotNull="true" />
+			<field name="originContentId" type="guid" />
+			<field name="originContentLocaleId" type="guid" isNotNull="true" />
+			<field name="originItemId" type="string" size="255" />
+			<field name="originFileFingerprint" type="string" size="255" />
+			<field name="destServiceInstanceId" type="guid" isNotNull="true" />
+			<field name="destContentId" type="guid" />
+			<field name="destContentLocaleId" type="guid" />
+			<field name="destItemId" type="string" size="255" />
+		</fields>
+		<constraints>
+			<constraint name="LUM_PK_CMIG_MIGITEMMAP" type="primaryKey">
+				<fields>
+					<field name="id"/>
+				</fields>
+			</constraint>
+			<constraint name="LUM_UN_CMIG_MIGITEMMAP" type="unique">
+				<fields>
+					<field name="originServiceInstanceId"/>
+					<field name="destServiceInstanceId"/>
+					<field name="sourceId"/>
+					<field name="originContentLocaleId"/>
+				</fields>
+			</constraint>
+		</constraints>
+	</table>
+
+	<table name="lum_cmig_MigRepoMap">
+		<fields>
+			<field name="id" type="guid" isNotNull="true" />
+			<field name="originRepoInstanceId" type="guid" isNotNull="true" />
+			<field name="destRepoInstanceId" type="guid" isNotNull="true" />
+			<field name="dependencyType" type="string" size="100" isNotNull="true" />
+		</fields>
+		<constraints>
+			<constraint name="LUM_PK_CMIG_MIGREPOMAP" type="primaryKey">
+				<fields>
+					<field name="id"/>
+				</fields>
+			</constraint>
+			<constraint name="LUM_UN_CMIG_MIGREPOMAP" type="unique">
+				<fields>
+					<field name="originRepoInstanceId"/>
+					<field name="destRepoInstanceId"/>
+				</fields>
+			</constraint>
+		</constraints>
+	</table>
+
+	<table name="lum_cmig_MigWidgetMap">
+		<fields>
+			<field name="id" type="guid" isNotNull="true" />
+			<field name="originWidgetContentId" type="guid" isNotNull="true" />
+			<field name="destRepoInstanceId" type="guid" isNotNull="true" />
+			<field name="destWidgetContentId" type="guid" isNotNull="true" />
+		</fields>
+		<constraints>
+			<constraint name="LUM_PK_CMIG_MIGWIDGETMAP" type="primaryKey">
+				<fields>
+					<field name="id"/>
+				</fields>
+			</constraint>
+			<constraint name="LUM_UN_CMIG_MIGWIDGETMAP" type="unique">
+				<fields>
+					<field name="originWidgetContentId"/>
+					<field name="destRepoInstanceId"/>
+				</fields>
+			</constraint>
+		</constraints>
+	</table>
+
+	<table name="lum_cmig_MigLock">
+		<fields>
+			<field name="id" type="string" size="20" isNotNull="true" />
+			<field name="runId" type="guid" />
+			<field name="migrationId" type="guid" />
+			<field name="heartbeat" type="dateTime" />
+		</fields>
+		<constraints>
+			<constraint name="LUM_PK_CMIG_MIGLOCK" type="primaryKey">
+				<fields>
+					<field name="id"/>
+				</fields>
+			</constraint>
+		</constraints>
+	</table>
+
+</databaseDefinition>

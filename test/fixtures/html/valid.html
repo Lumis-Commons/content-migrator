@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-contrast-pairs="text/bg, link/bg, mark-text/mark-bg, code-text/code-bg, callout-text/callout-bg">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Documento de teste</title>
+<style>
+:root {
+	--text: #1a1a1a;
+	--bg: #ffffff;
+	--link: #0b4f9c;
+	--mark-text: #1a1a1a;
+	--mark-bg: #ffe9a8;
+	--code-text: #1a1a1a;
+	--code-bg: #eef1f4;
+	--callout-text: #1a1a1a;
+	--callout-bg: #e3f0fb;
+}
+@media (prefers-color-scheme: dark) {
+	:root {
+		--text: #e8e8e8;
+		--bg: #121417;
+		--link: #8ab9f0;
+		--mark-text: #fff3cf;
+		--mark-bg: #5a4a10;
+		--code-text: #e8e8e8;
+		--code-bg: #23272d;
+		--callout-text: #e8e8e8;
+		--callout-bg: #1c2a38;
+	}
+}
+body { color: var(--text); background: var(--bg); }
+a { color: var(--link); }
+mark { color: var(--mark-text); background: var(--mark-bg); }
+pre { color: var(--code-text); background: var(--code-bg); tab-size: 4; overflow-x: auto; }
+.callout { color: var(--callout-text); background: var(--callout-bg); }
+@media (max-width: 700px) {
+	body { font-size: 16px; }
+}
+@media print {
+	a { color: #000; }
+}
+</style>
+</head>
+<body>
+<nav id="toc"><a href="#intro">Introdução</a> <a href="#codigo">Código</a></nav>
+<main>
+<h1>Título do documento</h1>
+<h2 id="intro">Introdução</h2>
+<p>Texto com <mark>destaque</mark> e <a href="https://exemplo.com.br/pagina">link externo</a>.</p>
+<div class="callout"><p>Observação.</p></div>
+<h2 id="codigo">Código</h2>
+<h3>Trecho</h3>
+<pre data-source="test/fixtures/html/snippet.txt#L3-L5"><code>	public int soma(int a, int b) {
+		if (a &lt; b <mark>&amp;&amp;</mark> b &gt; 0) {
+			<span>return a + b;</span>
+</code></pre>
+</main>
+</body>
+</html>

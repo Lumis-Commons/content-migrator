@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<project name="Pre-deploy task" basedir="." default="default">
+	<description>Executed before deploying the module from the source folder.</description>
+
+	<!-- module.source.dir is the module source directory, from where resources will be copied. -->
+	<property name="module.source.dir" location="src"/>
+	<!-- module.output.dir is the module output directory, to where resources will be copied.
+		The directory specified in this property is the one that will be used for deploy. -->
+	<property name="module.output.dir" location="target/classes"/>
+	
+	<target name="default" >
+		<!-- Copy resources -->
+		<copy todir="${module.output.dir}">
+			<fileset dir="${module.source.dir}">
+				<exclude name="**/*.java" />
+				<exclude name="**/.DS_Store" />
+			</fileset>
+		</copy>
+		
+		<!-- Cleanup obsolete files -->
+		<delete includeemptydirs="true">
+			<fileset dir="${module.output.dir}" includes="**/*">
+				<!-- Keep files that exist in source directory -->
+				<present present="srconly" targetdir="${module.source.dir}" />
+				<!-- META-INF/lib is managed by Maven -->
+				<exclude name="META-INF/lib/**"/>
+				<!-- Keep .class files -->
+				<exclude name="**/*.class"/>
+			</fileset>
+		</delete>
+	</target>
+</project>

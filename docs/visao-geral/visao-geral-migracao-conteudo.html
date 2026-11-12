@@ -1,0 +1,1316 @@
+<!doctype html>
+<html lang="pt-BR" data-contrast-pairs="text/bg, link/bg, mark-text/mark-bg, code-text/code-bg, callout-text/callout-bg">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Visão geral dos requisitos e do comportamento do Content Migrator, ferramenta que migra conteúdos entre instâncias do mesmo serviço LumisXP 19.0.0.">
+  <title>Migração de conteúdo entre instâncias — visão geral</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #FFFFFF;
+      --text: #243447;
+      --link: #005A8D;
+      --mark-text: #243447;
+      --mark-bg: #FFF1B8;
+      --code-text: #243447;
+      --code-bg: #F3F4F6;
+      --callout-text: #153E5C;
+      --callout-bg: #EAF2F8;
+      --border: #64748B;
+      --space-1: 0.25rem;
+      --space-2: 0.5rem;
+      --space-3: 0.75rem;
+      --space-4: 1rem;
+      --space-6: 1.5rem;
+      --space-8: 2rem;
+      --space-12: 3rem;
+      --space-16: 4rem;
+      --font-body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-code: ui-monospace, SFMono-Regular, Consolas, monospace;
+      --content-width: 68ch;
+      --page-width: 76rem;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      background: var(--bg);
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 1.0625rem;
+      line-height: 1.6;
+    }
+
+    a {
+      color: var(--link);
+      text-decoration: underline;
+      text-underline-offset: 0.15em;
+      text-decoration-thickness: 0.08em;
+      overflow-wrap: anywhere;
+    }
+
+    a:hover {
+      text-decoration-thickness: 0.14em;
+    }
+
+    :focus-visible {
+      outline: 3px solid var(--link);
+      outline-offset: 3px;
+    }
+
+    .skip-link {
+      position: absolute;
+      z-index: 10;
+      inset-block-start: var(--space-2);
+      inset-inline-start: var(--space-2);
+      padding: var(--space-2) var(--space-4);
+      transform: translateY(-160%);
+      background: var(--bg);
+      color: var(--link);
+    }
+
+    .skip-link:focus {
+      transform: translateY(0);
+    }
+
+    .page-shell {
+      width: min(100% - 2rem, var(--page-width));
+      margin-inline: auto;
+      padding-block: var(--space-8) var(--space-16);
+    }
+
+    .site-header {
+      max-inline-size: var(--content-width);
+      margin-block-end: var(--space-8);
+      padding-block-end: var(--space-6);
+      border-block-end: 1px solid var(--border);
+    }
+
+    .document-kicker {
+      margin: 0 0 var(--space-2);
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    h1,
+    h2,
+    h3 {
+      line-height: 1.25;
+      text-wrap: balance;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 1.5rem + 2vw, 3rem);
+    }
+
+    .subtitle {
+      margin: var(--space-3) 0 0;
+      font-size: 1.25rem;
+      line-height: 1.4;
+    }
+
+    .document-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2) var(--space-6);
+      margin: var(--space-6) 0 0;
+      font-size: 0.95rem;
+    }
+
+    .document-meta div {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0 var(--space-2);
+    }
+
+    .document-meta dt {
+      font-weight: 700;
+    }
+
+    .document-meta dd {
+      margin: 0;
+    }
+
+    .page-layout {
+      display: grid;
+      grid-template-columns: minmax(13rem, 16rem) minmax(0, 1fr);
+      align-items: start;
+      gap: var(--space-8);
+    }
+
+    .toc-wrap {
+      position: sticky;
+      inset-block-start: var(--space-4);
+      align-self: start;
+    }
+
+    .toc {
+      border: 1px solid var(--border);
+      border-radius: 0.35rem;
+      background: var(--bg);
+    }
+
+    .toc summary {
+      padding: var(--space-3) var(--space-4);
+      color: var(--text);
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    #toc {
+      padding: 0 var(--space-4) var(--space-4);
+    }
+
+    #toc ol {
+      display: grid;
+      gap: var(--space-2);
+      margin: 0;
+      padding-inline-start: 1.25rem;
+    }
+
+    #toc a {
+      display: inline-block;
+      padding: 0.1rem 0.2rem;
+    }
+
+    .page-shell:has(#abertura:target) #toc a[href="#abertura"],
+    .page-layout:has(#natureza:target) #toc a[href="#natureza"],
+    .page-layout:has(#como-ler:target) #toc a[href="#como-ler"],
+    .page-layout:has(#visao-geral:target) #toc a[href="#visao-geral"],
+    .page-layout:has(#pontos-chave-execucao:target) #toc a[href="#pontos-chave-execucao"],
+    .page-layout:has(#adddata-updatedata-workflow-versoes:target) #toc a[href="#adddata-updatedata-workflow-versoes"],
+    .page-layout:has(#campos-html-widgets:target) #toc a[href="#campos-html-widgets"],
+    .page-layout:has(#midia-documento-categoria-arquivos:target) #toc a[href="#midia-documento-categoria-arquivos"],
+    .page-layout:has(#clock-transacao-volume-maxtime:target) #toc a[href="#clock-transacao-volume-maxtime"],
+    .page-layout:has(#reversao:target) #toc a[href="#reversao"],
+    .page-layout:has(#incremental:target) #toc a[href="#incremental"],
+    .page-layout:has(#riscos-recomendacoes:target) #toc a[href="#riscos-recomendacoes"],
+    .page-layout:has(#decisoes-adocao:target) #toc a[href="#decisoes-adocao"],
+    .page-layout:has(#termos-usados:target) #toc a[href="#termos-usados"],
+    .page-layout:has(#proximos-passos:target) #toc a[href="#proximos-passos"] {
+      border-radius: 0.2rem;
+      background: var(--callout-bg);
+      color: var(--callout-text);
+      font-weight: 700;
+      text-decoration-thickness: 0.14em;
+    }
+
+    main {
+      min-inline-size: 0;
+    }
+
+    main > :first-child {
+      margin-block-start: 0;
+    }
+
+    .topics {
+      max-inline-size: var(--content-width);
+    }
+
+    .content-section,
+    .reading-guide {
+      margin-block: var(--space-8);
+      scroll-margin-block-start: var(--space-8);
+    }
+
+    .content-section:target,
+    .reading-guide:target {
+      padding-inline-start: var(--space-4);
+      border-inline-start: 0.25rem solid var(--link);
+    }
+
+    h2 {
+      margin-block: 0 var(--space-4);
+      font-size: 1.6rem;
+    }
+
+    h3 {
+      margin-block: var(--space-6) var(--space-2);
+      font-size: 1.25rem;
+    }
+
+    p {
+      max-inline-size: var(--content-width);
+      margin-block: 0 var(--space-4);
+    }
+
+    .callout {
+      max-inline-size: var(--content-width);
+      margin-block: var(--space-6);
+      padding: var(--space-4) var(--space-6);
+      border-inline-start: 0.3rem solid var(--link);
+      background: var(--callout-bg);
+      color: var(--callout-text);
+      break-inside: avoid;
+    }
+
+    .callout h2 {
+      margin-block-end: var(--space-2);
+    }
+
+    .callout p:last-child {
+      margin-block-end: 0;
+    }
+
+    .requirement,
+    .summary,
+    .module-flow,
+    .adoption {
+      margin-block: var(--space-6);
+      padding-inline-start: var(--space-4);
+      border-inline-start: 0.15rem solid var(--border);
+    }
+
+    .table-wrap {
+      max-inline-size: 100%;
+      margin-block: var(--space-6);
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: start;
+    }
+
+    caption {
+      padding: var(--space-2);
+      font-weight: 700;
+      text-align: start;
+    }
+
+    th,
+    td {
+      padding: var(--space-2) var(--space-3);
+      border: 1px solid var(--border);
+      text-align: start;
+      vertical-align: top;
+    }
+
+    th {
+      font-weight: 700;
+    }
+
+    code,
+    pre {
+      color: var(--code-text);
+      font-family: var(--font-code);
+    }
+
+    :not(pre) > code {
+      padding: 0.08em 0.25em;
+      background: var(--code-bg);
+      font-size: 0.9em;
+      overflow-wrap: anywhere;
+    }
+
+    code.ref,
+    code.ref-file {
+      border-radius: 0.2rem;
+      overflow-wrap: break-word;
+      -webkit-box-decoration-break: clone;
+      box-decoration-break: clone;
+    }
+
+    code.ref wbr.ref-camel,
+    code.ref wbr.ref-long {
+      display: none;
+    }
+
+    table:has(th:nth-child(4)) td code.ref wbr.ref-camel,
+    table:has(th:nth-child(4)) td code.ref wbr.ref-long {
+      display: inline;
+    }
+
+    pre {
+      max-inline-size: 100%;
+      margin-block: var(--space-4);
+      padding: var(--space-4);
+      overflow: auto;
+      background: var(--code-bg);
+      font-size: 0.9rem;
+      line-height: 1.5;
+      tab-size: 4;
+      white-space: pre;
+      break-inside: avoid;
+    }
+
+    .code-block {
+      max-inline-size: 100%;
+      break-inside: avoid;
+    }
+
+    .keyword {
+      font-weight: 700;
+    }
+
+    mark {
+      background: var(--mark-bg);
+      color: var(--mark-text);
+    }
+
+    kbd {
+      padding: 0.08em 0.35em;
+      border: 1px solid var(--border);
+      border-radius: 0.2rem;
+      background: var(--code-bg);
+      color: var(--code-text);
+      font-family: var(--font-code);
+      font-size: 0.9em;
+    }
+
+    figure {
+      max-inline-size: 100%;
+      margin: var(--space-8) 0;
+      break-inside: avoid;
+    }
+
+    figure svg {
+      display: block;
+      max-inline-size: 100%;
+      height: auto;
+    }
+
+    figcaption {
+      margin-block-start: var(--space-2);
+      font-size: 0.95rem;
+    }
+
+    .diagram {
+      max-inline-size: 23rem;
+      margin-inline: auto;
+      padding: var(--space-4);
+      border: 1px solid var(--border);
+      background: var(--bg);
+    }
+
+    .diagram svg {
+      width: 100%;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        color-scheme: dark;
+        --bg: #111827;
+        --text: #F9FAFB;
+        --link: #93C5FD;
+        --mark-text: #F9FAFB;
+        --mark-bg: #5B4B1F;
+        --code-text: #F3F4F6;
+        --code-bg: #1F2937;
+        --callout-text: #F9FAFB;
+        --callout-bg: #1F2937;
+        --border: #94A3B8;
+      }
+    }
+
+    @media (max-width: 48rem) {
+      .page-shell {
+        width: min(100% - 1.5rem, var(--page-width));
+        padding-block-start: var(--space-6);
+      }
+
+      .page-layout {
+        grid-template-columns: minmax(0, 1fr);
+        gap: var(--space-6);
+      }
+
+      .toc-wrap {
+        position: static;
+      }
+
+      .document-meta {
+        display: grid;
+        gap: var(--space-2);
+      }
+    }
+
+    @media (max-width: 30rem) {
+      td code.ref wbr.ref-camel,
+      code.ref wbr.ref-long {
+        display: inline;
+      }
+    }
+
+    @media print {
+      :root {
+        color-scheme: light;
+        --bg: #FFFFFF;
+        --text: #243447;
+        --link: #005A8D;
+        --mark-text: #243447;
+        --mark-bg: #FFF1B8;
+        --code-text: #243447;
+        --code-bg: #F3F4F6;
+        --callout-text: #153E5C;
+        --callout-bg: #EAF2F8;
+        --border: #64748B;
+      }
+
+      @page {
+        margin: 1.8cm;
+      }
+
+      body,
+      .toc,
+      .diagram {
+        background: #FFFFFF;
+        color: #243447;
+      }
+
+      .page-shell {
+        width: 100%;
+        padding: 0;
+      }
+
+      .page-layout {
+        display: block;
+      }
+
+      .toc-wrap,
+      .skip-link {
+        display: none;
+      }
+
+      .site-header {
+        max-inline-size: none;
+      }
+
+      .topics,
+      .callout {
+        max-inline-size: none;
+      }
+
+      .table-wrap {
+        overflow: visible;
+      }
+
+      table {
+        width: 100%;
+        table-layout: fixed;
+      }
+
+      table:has(code.ref) {
+        table-layout: auto;
+      }
+
+      th,
+      td {
+        overflow-wrap: anywhere;
+      }
+
+      table:has(code.ref) th,
+      table:has(code.ref) td {
+        overflow-wrap: normal;
+      }
+
+      a {
+        color: #243447;
+      }
+
+      figure {
+        margin-block: 0.75rem;
+      }
+
+      .code-block,
+      pre {
+        break-inside: auto;
+      }
+
+      pre {
+        overflow: visible;
+        overflow-wrap: anywhere;
+        white-space: pre-wrap;
+      }
+
+      .diagram {
+        max-inline-size: 9cm;
+        padding: 0.5rem;
+      }
+
+      .diagram svg {
+        width: auto;
+        max-block-size: 20cm;
+        margin-inline: auto;
+      }
+
+      h2,
+      h3 {
+        break-after: avoid-page;
+      }
+
+      .content-section,
+      .reading-guide {
+        break-inside: avoid-page;
+      }
+
+      .callout,
+      figure,
+      pre,
+      tr {
+        break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+  <div class="page-shell">
+    <header class="site-header" id="abertura">
+      <p class="document-kicker">Content Migrator</p>
+      <h1>Migração de conteúdo entre instâncias — visão geral</h1>
+      <p class="subtitle">Requisitos e comportamento da migração de conteúdo entre instâncias do mesmo serviço LumisXP 19.0.0</p>
+      <dl class="document-meta" aria-label="Dados do documento">
+        <div>
+          <dt>Módulo</dt>
+          <dd><code>br.com.lumis.commons.contentmigrator</code></dd>
+        </div>
+        <div>
+          <dt>Plataforma</dt>
+          <dd>LumisXP 19.0.0</dd>
+        </div>
+        <div>
+          <dt>Público</dt>
+          <dd>Equipes de projetos LumisXP</dd>
+        </div>
+      </dl>
+    </header>
+
+    <div class="page-layout">
+      <aside class="toc-wrap" aria-label="Navegação do documento">
+        <details class="toc" open>
+          <summary>Conteúdo</summary>
+          <nav id="toc" aria-label="Sumário">
+            <ol>
+              <li><a href="#abertura">Apresentação</a></li>
+              <li><a href="#natureza">Natureza deste documento</a></li>
+              <li><a href="#como-ler">Como ler</a></li>
+              <li><a href="#visao-geral">Visão geral da ferramenta</a></li>
+              <li><a href="#pontos-chave-execucao">Pontos-chave da execução</a></li>
+              <li><a href="#adddata-updatedata-workflow-versoes">addData, updateData, workflow e versões</a></li>
+              <li><a href="#campos-html-widgets">Campos HTML e widgets embutidos</a></li>
+              <li><a href="#midia-documento-categoria-arquivos">Mídia, documento, categoria e arquivos</a></li>
+              <li><a href="#clock-transacao-volume-maxtime">Clock, transação, volume e maxRunTime</a></li>
+              <li><a href="#reversao">Reversão do que foi migrado</a></li>
+              <li><a href="#incremental">Incremental e alterações na origem</a></li>
+              <li><a href="#riscos-recomendacoes">Riscos e recomendações</a></li>
+              <li><a href="#decisoes-adocao">Decisões e informações necessárias na adoção</a></li>
+              <li><a href="#termos-usados">Termos usados</a></li>
+              <li><a href="#proximos-passos">Próximos passos na adoção</a></li>
+            </ol>
+          </nav>
+        </details>
+      </aside>
+
+      <main id="conteudo">
+        <aside class="callout callout--nature" id="natureza" aria-labelledby="natureza-title">
+          <h2 id="natureza-title">Natureza deste documento</h2>
+          <p>Este documento define os requisitos de uma ferramenta que migra conteúdos entre duas instâncias do mesmo serviço LumisXP e mostra como o serviço <code>br.com.lumis.commons.contentmigrator.service.contentmigration</code>, do módulo Content Migrator, atende a cada um. O alvo é o LumisXP 19.0.0. O texto acompanha o documento de <a href="../requisitos/requisitos-migracao-conteudo.md">requisitos e comportamento da migração de conteúdo</a>, que reúne os mesmos fatos com links para as linhas do código.</p>
+          <p>Cada tema declara o que o módulo atende e seus limites; as decisões que dependem de cada projeto ficam identificadas. Antes de adotar ou adaptar o módulo, convém testá-lo em homologação com dados representativos do projeto. As afirmações sobre a plataforma vêm de um levantamento interno feito nas fontes do LumisXP 18.1.1, versão de que o módulo foi portado, e não reconferido na 19.0.0; os arquivos e as linhas de cada fato estão em <code>docs/internal/evidencias-plataforma-lumis.md</code>.</p>
+        </aside>
+
+        <section class="reading-guide" id="como-ler" aria-labelledby="como-ler-title">
+          <h2 id="como-ler-title">Como ler</h2>
+          <p>Cada tema começa pelo requisito, identificado de RQ-01 a RQ-08: o que a ferramenta deve fazer, de forma verificável. Em seguida, descreve como o módulo atende ao requisito e cita o método responsável pelo nome completo, na forma pacote.Classe.método, sem hiperlink. A linha só é indicada quando o trecho fica dentro de um método com mais de 60 linhas. Por fim, indica o que avaliar na adoção: as decisões que cada projeto toma ao usar ou adaptar o módulo. As decisões e informações necessárias na adoção são identificadas de AD-01 a AD-07.</p>
+        </section>
+
+        <article class="topics" aria-label="Requisitos e comportamento da migração de conteúdo">
+          <section class="content-section" id="visao-geral" aria-labelledby="visao-geral-title">
+            <h2 id="visao-geral-title">Visão geral da ferramenta</h2>
+            <div class="requirement">
+              <h3>Requisito RQ-01</h3>
+              <p>A ferramenta copia conteúdos de uma instância de origem para uma instância de destino diferente, do mesmo serviço, e controla cada migração por cinco operações com efeitos delimitados: criar, executar, parar, reverter e excluir.</p>
+            </div>
+            <div class="module-flow">
+              <h3>Como o módulo atende</h3>
+              <p><code>MigrationApi</code> implementa as cinco operações. Antes de criar uma migração, o serviço valida que origem e destino usam o mesmo serviço, o mesmo workflow e dependências compatíveis, como descreve o <a href="../../README.md">README do módulo</a>. A tabela mostra o requisito de cada operação e onde o módulo o implementa.</p>
+              <div class="table-wrap">
+                <table>
+                  <caption>Operações da migração</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Operação</th>
+                      <th scope="col">Requisito</th>
+                      <th scope="col">Como o módulo atende</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th scope="row">Criar</th>
+                      <td>Registrar a migração sem iniciar a cópia e recusar um par de instâncias inválido.</td>
+                      <td><code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>api.<wbr>MigrationApi.<wbr>create</code> valida o par de instâncias e grava a migração parada; os itens são descobertos ao iniciar.</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Executar</th>
+                      <td>Processar a migração em segundo plano, uma execução por vez.</td>
+                      <td><code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>api.<wbr>MigrationApi.<wbr>start</code> adquire o lock e submete a execução na hora.</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Parar</th>
+                      <td>Interromper a execução sem deixar um item gravado pela metade.</td>
+                      <td><code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>api.<wbr>MigrationApi.<wbr>stop</code> grava <code>stopRequested</code>, lido entre itens.</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Reverter</th>
+                      <td>Desfazer no destino o que a migração criou, sem concorrer com outra execução.</td>
+                      <td><code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>api.<wbr>MigrationApi.<wbr>undo</code> roda em segundo plano sob o mesmo lock.</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Excluir</th>
+                      <td>Remover o registro da migração sem apagar o conteúdo já gravado no destino.</td>
+                      <td><code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>api.<wbr>MigrationApi.<wbr>delete</code> remove os mapas de conteúdo e mantém o conteúdo do destino.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p>As tabelas de controle estão definidas em <code class="ref-file">src/<wbr>br/<wbr>com/<wbr>lumis/<wbr>commons/<wbr>contentmigrator/<wbr>service/<wbr>contentmigration/<wbr>componentfiles/<wbr>setup/<wbr>databasedefinition.xml</code>.</p>
+            </div>
+            <div class="adoption">
+              <h3>O que avaliar na adoção</h3>
+              <p>O módulo executa a migração quando o operador a inicia e não oferece agendamento periódico. Um projeto que precise de agendamento ou de uma fila própria pode comparar seu fluxo com as operações da tabela e com os pontos de RQ-06, em <a href="#clock-transacao-volume-maxtime">Clock, transação, volume e maxRunTime</a>, antes de definir o que adotar.</p>
+            </div>
+          </section>
+          <section class="content-section" id="pontos-chave-execucao" aria-labelledby="pontos-chave-execucao-title">
+            <h2 id="pontos-chave-execucao-title">Pontos-chave da execução</h2>
+            <div class="requirement">
+              <h3>Requisito RQ-02</h3>
+              <p>A execução roda em segundo plano, fora da requisição do operador; permite uma só execução por vez, inclusive entre servidores; grava cada item em uma transação própria, que inclui conteúdo, dependências, workflow e mapa; atende ao pedido de parada entre itens; e registra a falha sem deixar item parcial no destino.</p>
+            </div>
+            <div class="module-flow">
+              <h3>Como o módulo atende</h3>
+              <p>Quando o operador inicia uma migração, <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>api.<wbr>MigrationApi.<wbr>start</code> adquire o lock e envia a tarefa ao executor do Portal. Uma <mark>thread de segundo plano</mark> executa a operação; na cópia, cada <code>ContentLocale</code> é processado em uma transação própria.</p>
+              <ol>
+                <li><strong>Início e thread.</strong> <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>api.<wbr>MigrationApi.<wbr>start</code> chama <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>execution.<wbr>Migration<wbr class="ref-camel">Executor.<wbr>submit</code>, que entrega <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>execution.<wbr>MigrationTask.<wbr>run</code> ao executor do Portal por meio de <code class="ref">lumis.<wbr>portal.<wbr>executor.<wbr>ExecutorManager.<wbr>execute</code>. A tarefa personifica o usuário recebido na chamada e abre as transações necessárias na thread de execução.
+                </li>
+                <li><strong>Lock e heartbeat.</strong> Uma linha de <code>lum_cmig_MigLock</code> coordena as migrações entre servidores. <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>lock.<wbr>GlobalLock.<wbr>acquire</code> adquire um lock livre ou sem heartbeat há mais de cinco minutos, segundo o relógio do banco; <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>execution.<wbr>MigrationTask.<wbr>renewHeartbeat</code> renova o heartbeat a cada 60 segundos por padrão. Se um item ultrapassar o limite de tempo, a renovação pausa.
+                </li>
+                <li><strong>Transação por item.</strong> <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>copy.<wbr>ItemProcessor.<wbr>processOnce</code> grava conteúdo, dependências, workflow e mapa na mesma transação. Antes do commit, <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>lock.<wbr>GlobalLock.<wbr>confirm</code> confirma que o <code>runId</code> ainda detém o lock. A descoberta inicial carrega os identificadores dos <code>ContentLocale</code>; cada item lê e grava os dados na própria transação.
+                </li>
+                <li><strong>Parada entre itens.</strong> <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>api.<wbr>MigrationApi.<wbr>stop</code> registra o pedido. <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>execution.<wbr>MigrationTask.<wbr>migrateItems</code> o verifica antes de cada item; o item atual termina ou sofre rollback por inteiro.
+                </li>
+                <li><strong>Falha e perda do lock.</strong> Uma exceção de processamento leva a <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>execution.<wbr>MigrationTask.<wbr>recordFailure</code> e <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>execution.<wbr>Run<wbr class="ref-camel">Status<wbr class="ref-camel">Updater.<wbr>finish</code>, que registram <code>STOPPED_WITH_ERROR</code> e liberam o lock. Se outra execução tomar o lock, o item em andamento sofre rollback e a tarefa sai sem atualizar o status da migração antiga.
+                </li>
+              </ol>
+              <figure class="diagram">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 1060" width="320" height="1060" role="img" aria-labelledby="migration-flow-title migration-flow-desc">
+                  <title id="migration-flow-title">Fluxo de uma execução da migração</title>
+                  <desc id="migration-flow-desc">O operador solicita o início. A API tenta adquirir o lock global; se estiver ocupado, retorna ERROR_LOCKED. Se estiver livre, o ExecutorManager inicia MigrationTask em segundo plano. A tarefa descobre os itens, verifica parada e lock antes de cada item, grava cada item em transação própria, confirma o lock antes do commit e repete até o fim da lista. Parada, perda do lock e exceção têm saídas identificadas.</desc>
+                  <defs>
+                    <marker id="flow-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                      <path d="M0,0 L8,4 L0,8 z" fill="var(--border)"></path>
+                    </marker>
+                  </defs>
+                  <g fill="none" stroke="var(--border)" stroke-width="2" marker-end="url(#flow-arrow)">
+                    <path d="M160 70 V100"></path>
+                    <path d="M160 168 V182 H78 V197"></path>
+                    <path d="M160 168 V182 H242 V197"></path>
+                    <path d="M242 255 V269 H160 V280"></path>
+                    <path d="M160 342 V370"></path>
+                    <path d="M160 432 V460"></path>
+                    <path d="M160 522 V536 H78 V540"></path>
+                    <path d="M160 522 V536 H242 V540"></path>
+                    <path d="M242 610 V635 H160 V660"></path>
+                    <path d="M160 742 V770"></path>
+                    <path d="M160 882 V910"></path>
+                    <path d="M160 978 V1000"></path>
+                    <path d="M308 944 H316 V491 H308"></path>
+                  </g>
+                  <g font-family="system-ui, sans-serif" fill="var(--text)">
+                    <g>
+                      <rect x="12" y="18" width="296" height="52" rx="8" fill="var(--callout-bg)" stroke="var(--border)" stroke-width="2"></rect>
+                      <text x="160" y="49" text-anchor="middle" font-size="15" font-weight="700">Operador solicita o início</text>
+                    </g>
+                    <g>
+                      <rect x="12" y="100" width="296" height="68" rx="8" fill="var(--callout-bg)" stroke="var(--border)" stroke-width="2"></rect>
+                      <text x="160" y="128" text-anchor="middle" font-size="15" font-weight="700">MigrationApi.start</text>
+                      <text x="160" y="150" text-anchor="middle" font-size="14">tenta adquirir o lock global</text>
+                    </g>
+                    <g>
+                      <rect x="12" y="197" width="132" height="58" rx="8" fill="var(--mark-bg)" stroke="var(--border)" stroke-width="2"></rect>
+                      <text x="78" y="220" text-anchor="middle" font-size="14" font-weight="700">Lock ocupado</text>
+                      <text x="78" y="240" text-anchor="middle" font-size="14">ERROR_LOCKED</text>
+                    </g>
+                    <g>
+                      <rect x="176" y="197" width="132" height="58" rx="8" fill="var(--callout-bg)" stroke="var(--border)" stroke-width="2"></rect>
+                      <text x="242" y="220" text-anchor="middle" font-size="14" font-weight="700">Lock livre</text>
+                      <text x="242" y="240" text-anchor="middle" font-size="14">submete a tarefa</text>
+                    </g>
+                    <g>
+                      <rect x="12" y="280" width="296" height="62" rx="8" fill="var(--callout-bg)" stroke="var(--border)" stroke-width="2"></rect>
+                      <text x="160" y="305" text-anchor="middle" font-size="15" font-weight="700">MigrationTask.run</text>
+                      <text x="160" y="327" text-anchor="middle" font-size="14">thread do ExecutorManager</text>
+                    </g>
+                    <g>
+                      <rect x="12" y="370" width="296" height="62" rx="8" fill="var(--callout-bg)" stroke="var(--border)" stroke-width="2"></rect>
+                      <text x="160" y="395" text-anchor="middle" font-size="15" font-weight="700">Descobre os IDs de ContentLocale</text>
+                      <text x="160" y="417" text-anchor="middle" font-size="14">prepara o percurso da fila</text>
+                    </g>
+                    <g>
+                      <rect x="12" y="460" width="296" height="62" rx="8" fill="var(--callout-bg)" stroke="var(--border)" stroke-width="2"></rect>
+                      <text x="160" y="485" text-anchor="middle" font-size="15" font-weight="700">Antes do item</text>
+                      <text x="160" y="507" text-anchor="middle" font-size="14">verifica o lock e o pedido de parada</text>
+                    </g>
+                    <g>
+                      <rect x="12" y="540" width="132" height="70" rx="8" fill="var(--mark-bg)" stroke="var(--border)" stroke-width="2"></rect>
+                      <text x="78" y="563" text-anchor="middle" font-size="14" font-weight="700">Parada pedida</text>
+                      <text x="78" y="583" text-anchor="middle" font-size="14">STOPPED</text>
+                      <text x="78" y="601" text-anchor="middle" font-size="13">libera o lock</text>
+                    </g>
+                    <g>
+                      <rect x="176" y="540" width="132" height="70" rx="8" fill="var(--callout-bg)" stroke="var(--border)" stroke-width="2"></rect>
+                      <text x="242" y="563" text-anchor="middle" font-size="14" font-weight="700">Sem parada</text>
+                      <text x="242" y="583" text-anchor="middle" font-size="14">processa o</text>
+                      <text x="242" y="601" text-anchor="middle" font-size="14">próximo item</text>
+                    </g>
+                    <g>
+                      <rect x="12" y="660" width="296" height="82" rx="8" fill="var(--callout-bg)" stroke="var(--border)" stroke-width="2"></rect>
+                      <text x="160" y="685" text-anchor="middle" font-size="15" font-weight="700">Transação do item</text>
+                      <text x="160" y="707" text-anchor="middle" font-size="14">conteúdo, dependências, workflow</text>
+                      <text x="160" y="727" text-anchor="middle" font-size="14">e mapa</text>
+                    </g>
+                    <g>
+                      <rect x="12" y="770" width="296" height="112" rx="8" fill="var(--callout-bg)" stroke="var(--border)" stroke-width="2"></rect>
+                      <text x="160" y="792" text-anchor="middle" font-size="15" font-weight="700">Confirma posse do lock</text>
+                      <text x="160" y="812" text-anchor="middle" font-size="14">runId válido: segue para commit</text>
+                      <text x="160" y="832" text-anchor="middle" font-size="14">lock perdido: rollback e saída</text>
+                      <text x="160" y="852" text-anchor="middle" font-size="14">exceção: rollback e</text>
+                      <text x="160" y="872" text-anchor="middle" font-size="14">STOPPED_WITH_ERROR</text>
+                    </g>
+                    <g>
+                      <rect x="12" y="910" width="296" height="68" rx="8" fill="var(--callout-bg)" stroke="var(--border)" stroke-width="2"></rect>
+                      <text x="160" y="935" text-anchor="middle" font-size="15" font-weight="700">Commit do item</text>
+                      <text x="160" y="957" text-anchor="middle" font-size="14">próximo: volta ao check · fim: conclui</text>
+                    </g>
+                    <g>
+                      <rect x="12" y="1000" width="296" height="56" rx="8" fill="var(--callout-bg)" stroke="var(--border)" stroke-width="2"></rect>
+                      <text x="160" y="1034" text-anchor="middle" font-size="15" font-weight="700">FINISHED · libera o lock</text>
+                    </g>
+                  </g>
+                </svg>
+                <figcaption>A parada é verificada entre itens. Cada item é confirmado em transação própria, depois da verificação do lock.</figcaption>
+              </figure>
+            </div>
+            <div class="adoption">
+              <h3>O que avaliar na adoção</h3>
+              <p>Cada projeto define qual estado mostrar quando uma execução perde o lock; no módulo, a tomada do lock não altera o status da execução anterior.</p>
+            </div>
+          </section>
+          <section class="content-section" id="adddata-updatedata-workflow-versoes" aria-labelledby="adddata-updatedata-workflow-versoes-title">
+            <h2 id="adddata-updatedata-workflow-versoes-title">addData, updateData, workflow e versões</h2>
+            <div class="requirement">
+              <h3>Requisito RQ-03</h3>
+              <p>A cópia grava pela source do serviço de destino, para que os hooks da plataforma sejam executados; reproduz no destino as versões publicada e ativa da origem, o estado de workflow, o responsável válido no destino, a autoria, as datas e os comentários; e mantém a identidade de cada <code>ContentLocale</code> copiado, mesmo quando uma atualização versionada devolve outro itemId.</p>
+              <p>Isso é necessário porque, na plataforma, <code>addData</code> cria um conteúdo novo e <code class="ref">lumis.<wbr>content.<wbr>table.<wbr>Content<wbr class="ref-camel">Table<wbr class="ref-camel">Source.<wbr>addData</code> executa os hooks de inserção, enquanto <code>updateData</code> altera o conteúdo identificado no destino. Com <code>VersionActive</code>, <code class="ref">lumis.<wbr>content.<wbr>table.<wbr>Content<wbr class="ref-camel">Table<wbr class="ref-camel">Source.<wbr>updateData</code> cria outra linha de negócio e pode devolver outro itemId. <code>addData</code> não copia, por si só, as versões publicada e ativa nem o estado de workflow da origem.</p>
+            </div>
+            <div class="module-flow">
+              <h3>Como o módulo atende</h3>
+              <ul>
+                <li><code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>copy.<wbr>ContentCopier.<wbr>buildData</code> monta os dados de cada versão a partir do escopo da migração (<code>MigrationScope</code>) e da versão a copiar (<code>VersionCopy</code>). <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>copy.<wbr>ContentCopier.<wbr>shouldCopyField</code> exclui a chave primária da origem. <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>copy.<wbr>ContentCopier.<wbr>put<wbr class="ref-camel">Identity<wbr class="ref-camel">Parameters</code> identifica o destino por idioma e <code>contentId</code>. <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>copy.<wbr>ItemProcessor.<wbr>write<wbr class="ref-camel">Version<wbr class="ref-camel">Data</code> usa <code>addData</code> quando o <code>ContentLocale</code> de destino ainda não existe e <code>updateData</code> nas demais gravações.</li>
+                <li><code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>copy.<wbr>ItemProcessor.<wbr>build<wbr class="ref-long">Origin<wbr class="ref-long">Versions<wbr class="ref-long">To<wbr class="ref-long">Copy</code> seleciona as versões publicada e ativa, e <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>copy.<wbr>ItemProcessor.<wbr>copyVersions</code> grava cada uma delas. <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>copy.<wbr>ItemProcessor.<wbr>copy<wbr class="ref-camel">Locale<wbr class="ref-camel">Metadata</code> define a versão publicada do destino e aplica tags. <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>copy.<wbr>ItemProcessor.<wbr>saveItemMap</code> guarda a identidade estável de <code>ContentLocale</code>, mesmo quando a gravação versionada devolve outro itemId.</li>
+                <li><code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>copy.<wbr>WorkflowCloner.<wbr>copyState</code> grava o estado e o responsável na transação do item, sem executar uma transição. <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>copy.<wbr>WorkflowCloner.<wbr>resolve<wbr class="ref-camel">Assigned<wbr class="ref-camel">To</code> preserva o responsável apenas se ele tiver papel no destino. Na atualização, <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>copy.<wbr>WorkflowCloner.<wbr>return<wbr class="ref-camel">To<wbr class="ref-camel">Start<wbr class="ref-camel">State</code> retorna o destino ao estado inicial antes de <code>updateData</code>, pois a verificação de <code class="ref">lumis.<wbr>content.<wbr>workflow.<wbr>Workflow<wbr class="ref-camel">Manager.<wbr>has<wbr class="ref-camel">Edit<wbr class="ref-camel">Permission</code>, consultada pelo <code>WorkflowController</code>, pode impedir a edição de conteúdo publicado. <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>copy.<wbr>Authorship<wbr class="ref-camel">Cloner.<wbr>copy</code> restaura autoria, datas e comentários após a gravação.</li>
+              </ul>
+            </div>
+            <div class="adoption">
+              <h3>O que avaliar na adoção</h3>
+              <p>Cada projeto avalia se a política de versões e workflow do destino deve espelhar a origem; quais papéis os responsáveis têm no destino; e se a ferramenta grava diretamente os metadados de workflow, como o módulo, ou executa transições, que podem disparar efeitos editoriais. A gravação direta escreve na tabela interna <code>lum_WorkflowMetaData</code>, um detalhe de implementação da plataforma que cada atualização do LumisXP precisa reconfirmar. Cada projeto também decide se preserva a autoria original.</p>
+            </div>
+          </section>
+          <section class="content-section" id="campos-html-widgets" aria-labelledby="campos-html-widgets-title">
+            <h2 id="campos-html-widgets-title">Campos HTML e widgets embutidos</h2>
+            <div class="requirement">
+              <h3>Requisito RQ-04</h3>
+              <p>Um conteúdo com HTML e widgets embutidos é criado no destino em uma única gravação, sem a chave primária da origem; cada embed passa a apontar para o widget equivalente no repositório de destino, com o HTML de cada área processado pelo utilitário da plataforma, e não por expressão regular sobre o JSON bruto; e um widget sem equivalente mapeado bloqueia o item antes da gravação.</p>
+              <p>Isso é necessário porque, na plataforma, o <code>addData</code> pode receber o HTML sem a chave primária da origem, mas a exceção <em>Unable to get content version by item id</em> ocorre quando o hook nativo tenta localizar uma versão a partir dessa chave e não a encontra (<code class="ref">lumis.<wbr>doui.<wbr>source.<wbr>field.<wbr>type.<wbr>Html<wbr class="ref-camel">Data<wbr class="ref-camel">Type.<wbr>preAdd</code>, <code class="ref">lumis.<wbr>service.<wbr>pagepersonalization.<wbr>Page<wbr class="ref-camel">Personalization<wbr class="ref-camel">Util.<wbr>clone<wbr class="ref-camel">Widgets<wbr class="ref-camel">If<wbr class="ref-camel">Needed</code>). O clone nativo trata as instâncias embutidas, mas não mapeia sozinho um widget para seu equivalente em outro repositório; <mark>essa associação fica a cargo da ferramenta</mark>.</p>
+            </div>
+            <div class="module-flow">
+              <h3>Como o módulo atende</h3>
+              <ol>
+                <li>Mantém o HTML no payload de criação e exclui a chave primária da origem por meio de <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>copy.<wbr>ContentCopier.<wbr>shouldCopyField</code>. Antes da gravação, <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>copy.<wbr>ContentCopier.<wbr>prepare<wbr class="ref-camel">Cloned<wbr class="ref-camel">Value</code> aplica os handlers de dependência.</li>
+                <li>Processa cada área do HTML com <code class="ref">lumis.<wbr>doui.<wbr>source.<wbr>field.<wbr>type.<wbr>Html<wbr class="ref-camel">Data<wbr class="ref-camel">Type<wbr class="ref-camel">Util.<wbr>process<wbr class="ref-camel">Areas<wbr class="ref-camel">Html</code> e reescreve os embeds para o widget de destino em <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>dependency.<wbr>widget.<wbr>Widget<wbr class="ref-camel">Dependency<wbr class="ref-camel">Handler.<wbr>rewriteHtml</code> e <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>dependency.<wbr>widget.<wbr>Widget<wbr class="ref-camel">Dependency<wbr class="ref-camel">Handler.<wbr>rewriteArea</code>. Quando as interfaces coincidem, <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>dependency.<wbr>widget.<wbr>Widget<wbr class="ref-camel">Dependency<wbr class="ref-camel">Handler.<wbr>copy<wbr class="ref-long">Embed<wbr class="ref-long">Configuration<wbr class="ref-long">If<wbr class="ref-long">Same<wbr class="ref-long">Interface</code> copia propriedades e preferências. Os hooks de <code>HtmlDataType</code> associam as instâncias ao conteúdo de destino durante <code>addData</code> ou <code>updateData</code>.</li>
+                <li>Se faltar o mapeamento, <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>dependency.<wbr>widget.<wbr>Widget<wbr class="ref-camel">Dependency<wbr class="ref-camel">Handler.<wbr>precheckHtml</code> bloqueia o item antes de gravar. O operador pode mapear o widget e retomar a migração, como cobre <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>test.<wbr>migration.<wbr>Widget<wbr class="ref-camel">Migration<wbr class="ref-camel">Test.<wbr>blocks<wbr class="ref-long">Without<wbr class="ref-long">Mapping<wbr class="ref-long">Then<wbr class="ref-long">Resumes<wbr class="ref-long">And<wbr class="ref-long">Rewrites<wbr class="ref-long">Every<wbr class="ref-long">Embed</code>.</li>
+              </ol>
+              <p>A SPI recebe o HTML e devolve seu valor reescrito. O módulo implementa esse ponto de extensão no handler de widgets:</p>
+              <figure class="code-block">
+                <pre data-source="src/br/com/lumis/commons/contentmigrator/service/contentmigration/dependency/DependencyHandler.java#L69-L76"><code>	/**
+	 * Rewrites the references of an html value, including the JSON of {@code lumHtmlContent}, to
+	 * the destination. Returns the value unchanged when there is nothing to rewrite.
+	 *
+	 * @throws MigrationBlockedException
+	 *             if a mapping checked by the precheck is no longer valid.
+	 */
+	String rewriteHtml(DependencyContext context, String html) throws MigrationBlockedException, Exception;</code></pre>
+                <figcaption>Contrato da SPI <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>dependency.<wbr>Dependency<wbr class="ref-camel">Handler.<wbr>rewriteHtml</code>.</figcaption>
+              </figure>
+            </div>
+            <div class="adoption">
+              <h3>O que avaliar na adoção</h3>
+              <p>Em homologação, convém testar um conteúdo representativo do projeto, com HTML e widget, para confirmar que a gravação única preserva os embeds. Implementações que criam o conteúdo sem HTML e o completam numa atualização posterior, ou que reconhecem a falha pelo texto da exceção, podem dispensar esses contornos depois desse teste (ver <a href="#ad-01">AD-01</a>). Cada projeto também define como tratar widgets sem mapeamento; o módulo interrompe a gravação até o operador resolver a dependência.</p>
+            </div>
+          </section>
+          <section class="content-section" id="midia-documento-categoria-arquivos" aria-labelledby="midia-documento-categoria-arquivos-title">
+            <h2 id="midia-documento-categoria-arquivos-title">Mídia, documento, categoria e arquivos</h2>
+            <div class="requirement">
+              <h3>Requisito RQ-05</h3>
+              <p>A ferramenta leva para o destino as dependências referenciadas pelo conteúdo (mídia, documentos, termos de categorização e arquivos) sem duplicá-las em novas execuções; reescreve as referências de mídia e documento no HTML; grava cada arquivo como arquivo novo do destino; e, no modo <code>UPDATE</code>, só regrava um arquivo quando seu conteúdo muda.</p>
+            </div>
+            <div class="module-flow">
+              <h3>Como o módulo atende</h3>
+              <p>O mapa associa cada item de origem ao destino; no modo <mark>UPDATE</mark>, o módulo compara o fingerprint do arquivo e só o regrava quando o conteúdo muda.</p>
+              <div class="table-wrap">
+                <table>
+                  <caption>Dependências copiadas e critérios de reutilização</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Tipo</th>
+                      <th scope="col">O que o módulo copia</th>
+                      <th scope="col">Como evita duplicar</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th scope="row">Mídia</th>
+                      <td>Item do repositório, arquivo e pastas ancestrais.</td>
+                      <td><code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>dependency.<wbr>Repository<wbr class="ref-camel">Cloner.<wbr>resolve</code> reutiliza o item já mapeado. Sem mapa, o handler reutiliza uma pasta de mesmo nome sob o mesmo pai; em caso de duplicata, escolhe o menor id e registra um aviso (<code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>dependency.<wbr>media.<wbr>Media<wbr class="ref-camel">Dependency<wbr class="ref-camel">Handler.<wbr>MediaAdapter.<wbr>findFolder</code>).</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Documento</th>
+                      <td>Item do repositório, arquivo e pastas ancestrais.</td>
+                      <td>Usa o mesmo mapa; a pasta é localizada sob o mesmo pai e, se houver duplicatas, o handler escolhe o menor id e registra um aviso (<code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>dependency.<wbr>document.<wbr>Document<wbr class="ref-long">Dependency<wbr class="ref-long">Handler.<wbr>DocumentAdapter.<wbr>findFolder</code>).</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Termo de categoria</th>
+                      <td>Termo e sua hierarquia.</td>
+                      <td><code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>dependency.<wbr>categorization.<wbr>Categorization<wbr class="ref-long">Dependency<wbr class="ref-long">Handler.<wbr>resolve</code> consulta o mapa e, sem entrada, reutiliza o termo de mesmo nome sob o mesmo pai (<code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>dependency.<wbr>categorization.<wbr>Categorization<wbr class="ref-long">Dependency<wbr class="ref-long">Handler.<wbr>TermAdapter.<wbr>findFolder</code>).</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Arquivo</th>
+                      <td>Cópia binária temporária, gravada como arquivo novo no destino.</td>
+                      <td><code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>dependency.<wbr>FileCloner.<wbr>copy<wbr class="ref-camel">With<wbr class="ref-camel">Fingerprint</code> gera dados sem <code>fileId</code> de origem e calcula SHA-256 e tamanho; <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>dependency.<wbr>Repository<wbr class="ref-camel">Cloner.<wbr>resolve</code> compara o fingerprint no modo UPDATE.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p>Os handlers também reescrevem referências de mídia e documento no HTML (<code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>dependency.<wbr>media.<wbr>Media<wbr class="ref-camel">Dependency<wbr class="ref-camel">Handler.<wbr>rewriteHtml</code>; <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>dependency.<wbr>document.<wbr>Document<wbr class="ref-long">Dependency<wbr class="ref-long">Handler.<wbr>rewriteHtml</code>). O arquivo temporário é mantido até o commit para que a gravação do destino possa copiá-lo por <code class="ref">lumis.<wbr>portal.<wbr>file.<wbr>FileManager.<wbr>add</code>; depois do commit, <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>dependency.<wbr>FileCloner.<wbr>close</code> remove a cópia.</p>
+              <figure class="code-block">
+                <pre data-source="src/br/com/lumis/commons/contentmigrator/service/contentmigration/dependency/FileCloner.java#L78-L90"><code>		MessageDigest digest = MessageDigest.getInstance("SHA-256");
+		long size = 0;
+		try (InputStream in = PortalBaseFolder.DATA.toPortalFilePath(fullPath).toFile().getInputStream(); OutputStream out = Files.newOutputStream(copy))
+		{
+			byte[] buffer = new byte[8192];
+			int read;
+			while ((read = in.read(buffer)) != -1)
+			{
+				out.write(buffer, 0, read);
+				digest.update(buffer, 0, read);
+				size += read;
+			}
+		}</code></pre>
+                <figcaption>O fingerprint é calculado enquanto os bytes são copiados (<code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>dependency.<wbr>FileCloner.<wbr>copy<wbr class="ref-camel">With<wbr class="ref-camel">Fingerprint</code>).</figcaption>
+              </figure>
+            </div>
+            <div class="adoption">
+              <h3>O que avaliar na adoção</h3>
+              <p>Quem adaptar a reversão de documentos precisa manter a consulta à hierarquia em <code>lum_Document</code>, como faz <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>dependency.<wbr>document.<wbr>Document<wbr class="ref-long">Dependency<wbr class="ref-long">Handler.<wbr>is<wbr class="ref-camel">Clone<wbr class="ref-camel">Referenced</code>, que verifica usos e pastas filhas. Em serviços com campo de categorização, convém persistir a associação de categoria depois de resolver o termo no destino: <code class="ref">lumis.<wbr>content.<wbr>source.<wbr>field.<wbr>Categorization<wbr class="ref-long">Source<wbr class="ref-long">Field.<wbr>get<wbr class="ref-camel">Query<wbr class="ref-camel">Assignments</code> não gera assignments para insert ou update, enquanto <code class="ref">lumis.<wbr>content.<wbr>control.<wbr>autolayout.<wbr>Association<wbr class="ref-long">Process<wbr class="ref-long">Action<wbr class="ref-long">Handler.<wbr>process<wbr class="ref-camel">Tags<wbr class="ref-camel">Structure</code> aplica as associações. O módulo resolve os termos por hierarquia.</p>
+            </div>
+          </section>
+          <section class="content-section" id="clock-transacao-volume-maxtime" aria-labelledby="clock-transacao-volume-maxtime-title">
+            <h2 id="clock-transacao-volume-maxtime-title">Clock, transação, volume e maxRunTime</h2>
+            <div class="requirement">
+              <h3>Requisito RQ-06</h3>
+              <p>Uma execução em andamento não pode ser iniciada de novo por outro servidor; o status de sucesso de um item só é confirmado na mesma transação que grava seu conteúdo; e a execução não mantém em memória os dados completos dos conteúdos a copiar.</p>
+              <p>Isso é necessário porque, na plataforma, <code>maxRunTime</code> não interrompe o tick nem faz rollback. <code class="ref">lumis.<wbr>portal.<wbr>clock.<wbr>ClockManager.<wbr>checkMaxRunTime</code> apenas limpa o estado persistido <code>running</code>; em outro servidor, <code class="ref">lumis.<wbr>portal.<wbr>clock.<wbr>ClockManager.<wbr>find<wbr class="ref-camel">Next<wbr class="ref-camel">Schedules</code> pode selecionar o clock vencido enquanto a thread original ainda executa; portanto, <mark>o limite não encerra a thread</mark>. <code class="ref">lumis.<wbr>portal.<wbr>clock.<wbr>ClockThreadPool.<wbr>addSchedule</code> evita repetição apenas dentro do mesmo servidor, pois esse mapa em memória não coordena servidores diferentes.</p>
+            </div>
+            <div class="module-flow">
+              <h3>Como o módulo atende</h3>
+              <ol>
+                <li><code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>api.<wbr>MigrationApi.<wbr>start</code> envia a tarefa a <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>execution.<wbr>Migration<wbr class="ref-camel">Executor.<wbr>submit</code>, que usa o <code>ExecutorManager</code>; o módulo não usa clock.</li>
+                <li>O <code>GlobalLock</code> coordena as instâncias por uma linha persistida no banco (<code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>lock.<wbr>GlobalLock.<wbr>acquire</code>).</li>
+                <li><code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>copy.<wbr>ItemProcessor.<wbr>processOnce</code> processa cada <code>ContentLocale</code> numa transação própria, com conteúdo, dependências, workflow e mapa, e grava o mapa antes do commit. Uma falha desfaz o item; itens já confirmados permanecem, e a próxima execução pode copiar de novo o item desfeito.</li>
+                <li><code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>copy.<wbr>ItemProcessor.<wbr>discover</code> mantém em memória uma lista de identificadores, não os dados completos dos conteúdos.</li>
+              </ol>
+              <div class="table-wrap">
+                <table>
+                  <caption>Transação do lote e transação por item</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Granularidade</th>
+                      <th scope="col">Dados persistidos</th>
+                      <th scope="col">Efeito de uma falha</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th scope="row">Transação única do lote</th>
+                      <td>Uma implementação grava o conteúdo do lote em uma transação e confirma o status de cada item em transações separadas.</td>
+                      <td>Se a transação do lote for desfeita depois de um status de sucesso confirmado, o status pode permanecer sem o conteúdo correspondente.</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Transação por item</th>
+                      <td>O módulo grava conteúdo, dependências, workflow e mapa do item na mesma transação (<code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>copy.<wbr>ItemProcessor.<wbr>processOnce</code>).</td>
+                      <td>Uma falha desfaz o item atual; conteúdo e mapa são confirmados juntos. Itens já confirmados permanecem.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <figure class="code-block">
+                <pre data-source="src/br/com/lumis/commons/contentmigrator/service/contentmigration/copy/ItemProcessor.java#L226-L234"><code>				injectFaults(ordinal);
+				if (!GlobalLock.confirm(connection, runId))
+				{
+					transaction.rollback();
+					return ItemOutcome.LOCK_LOST;
+				}
+				transaction.commit();
+				return ItemOutcome.COPIED;
+			}</code></pre>
+                <figcaption>O item confirma a posse do lock antes do commit (<code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>copy.<wbr>ItemProcessor.<wbr>processOnce</code>).</figcaption>
+              </figure>
+              <aside class="callout" aria-label="Interpretação de maxRunTime">
+                <p>O vencimento do clock libera seu estado persistido para novo agendamento. A proteção local do pool não impede uma segunda instância de iniciar outro tick enquanto a thread original continua.</p>
+              </aside>
+            </div>
+            <div class="adoption">
+              <h3>O que avaliar na adoção</h3>
+              <p>Uma implementação que abre uma transação para o lote e confirma o status de cada item em transações separadas pode registrar sucesso sem o conteúdo correspondente, se o lote sofrer rollback depois; gravar conteúdo e status do item na mesma transação reduz esse risco. Um projeto que execute a migração por clock também pode adotar um limite cooperativo de itens por tick, abaixo do <code>maxRunTime</code>, e um lock persistido para impedir sobreposição entre servidores (ver <a href="#ad-02">AD-02</a>). Para lotes grandes, convém avaliar paginação da lista de itens, pois o módulo mantém os identificadores em memória (ver <a href="#ad-06">AD-06</a>).</p>
+            </div>
+          </section>
+          <section class="content-section" id="reversao" aria-labelledby="reversao-title">
+            <h2 id="reversao-title">Reversão do que foi migrado</h2>
+            <div class="requirement">
+              <h3>Requisito RQ-07</h3>
+              <p>Reverter remove do destino somente o que a migração criou, identificado por um mapa gravado junto com o item; mantém o que ainda é referenciado por outro conteúdo; e processa os itens em transações próprias, sob o mesmo lock das execuções.</p>
+            </div>
+            <div class="module-flow">
+              <h3>Como o módulo atende</h3>
+              <p>O módulo identifica o conteúdo pelo <code>ContentLocale</code> de destino e recarrega seu itemId ativo antes de excluí-lo; não usa um itemId gravado como prova isolada de propriedade, pois uma atualização versionada pode trocá-lo. Para mídia e documentos, o mapa guarda <code>destItemId</code> e <code>destCreated</code>; para conteúdo, usa o <code>destContentLocaleId</code> e recarrega o itemId ativo. A reversão remove o conteúdo criado pela migração quando ele não tem referências, mas <mark>não verifica se alguém o editou depois</mark>: uma edição posterior não impede a exclusão.</p>
+              <ol>
+                <li><code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>undo.<wbr>MigrationUndoer.<wbr>undoContent</code> mantém com aviso o conteúdo criado que ainda tem referências. <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>undo.<wbr>MigrationUndoer.<wbr>delete<wbr class="ref-long">Destination<wbr class="ref-long">Content<wbr class="ref-long">Locale</code> recarrega a versão ativa e exclui pelo itemId atual, que pode ter mudado após uma atualização versionada.</li>
+                <li><code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>undo.<wbr>MigrationUndoer.<wbr>undo<wbr class="ref-camel">Repository<wbr class="ref-camel">Item</code> encaminha a exclusão ao handler. <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>dependency.<wbr>media.<wbr>Media<wbr class="ref-camel">Dependency<wbr class="ref-camel">Handler.<wbr>deleteClone</code> e <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>dependency.<wbr>document.<wbr>Document<wbr class="ref-long">Dependency<wbr class="ref-long">Handler.<wbr>deleteClone</code> removem somente clones criados pela migração; o fluxo retém clones criados que ainda têm referências.</li>
+                <li><code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>execution.<wbr>MigrationTask.<wbr>undoItems</code> percorre conteúdo e clones de repositório sob o lock, com uma transação por item e verificação de parada entre itens.</li>
+              </ol>
+              <figure class="diagram">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 900" width="320" height="900" role="img" aria-labelledby="undo-flow-title undo-flow-desc">
+                  <title id="undo-flow-title">Fluxo de reversão dos itens migrados</title>
+                  <desc id="undo-flow-desc">A tarefa de reversão percorre primeiro os mapas de conteúdo e depois os mapas de mídia e documentos, verificando lock e parada antes de cada item. Cada linha usa uma transação própria. Conteúdo criado e ainda referenciado é mantido com aviso; sem referência, a versão ativa é recarregada e seu itemId atual é excluído. Para mídia e documentos, o handler retém clones criados que ainda têm referências e remove apenas clones criados pela migração que não estão referenciados. Cada item confirma o lock antes do commit; a perda do lock desfaz a transação.</desc>
+                  <defs>
+                    <marker id="undo-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                      <path d="M0,0 L8,4 L0,8 z" fill="var(--border)"></path>
+                    </marker>
+                  </defs>
+                  <g fill="none" stroke="var(--border)" stroke-width="2" marker-end="url(#undo-arrow)">
+                    <path d="M160 72 V96"></path>
+                    <path d="M160 180 V204"></path>
+                    <path d="M160 288 V312"></path>
+                    <path d="M160 432 V456"></path>
+                    <path d="M160 540 V564"></path>
+                    <path d="M160 684 V708"></path>
+                    <path d="M160 792 V816"></path>
+                  </g>
+                  <g font-family="system-ui, sans-serif" fill="var(--text)">
+                    <g>
+                      <rect x="12" y="18" width="296" height="54" rx="8" fill="var(--callout-bg)" stroke="var(--border)" stroke-width="2"></rect>
+                      <text x="160" y="51" text-anchor="middle" font-size="15" font-weight="700">Pedido de reversão</text>
+                    </g>
+                    <g>
+                      <rect x="12" y="96" width="296" height="84" rx="8" fill="var(--callout-bg)" stroke="var(--border)" stroke-width="2"></rect>
+                      <text x="160" y="124" text-anchor="middle" font-size="15" font-weight="700">MigrationTask.undoItems</text>
+                      <text x="160" y="148" text-anchor="middle" font-size="14">percorre mapas; verifica lock e parada</text>
+                      <text x="160" y="168" text-anchor="middle" font-size="14">antes de cada item</text>
+                    </g>
+                    <g>
+                      <rect x="12" y="204" width="296" height="84" rx="8" fill="var(--callout-bg)" stroke="var(--border)" stroke-width="2"></rect>
+                      <text x="160" y="232" text-anchor="middle" font-size="15" font-weight="700">Conteúdo: uma transação por item</text>
+                      <text x="160" y="256" text-anchor="middle" font-size="14">usa destContentLocaleId do mapa</text>
+                      <text x="160" y="276" text-anchor="middle" font-size="14">e recarrega a versão ativa</text>
+                    </g>
+                    <g>
+                      <rect x="12" y="312" width="296" height="120" rx="8" fill="var(--mark-bg)" stroke="var(--border)" stroke-width="2"></rect>
+                      <text x="160" y="338" text-anchor="middle" font-size="14" font-weight="700">Conteúdo criado e referenciado?</text>
+                      <text x="160" y="362" text-anchor="middle" font-size="14">Sim: mantém e registra aviso</text>
+                      <text x="160" y="386" text-anchor="middle" font-size="14">Sem referência: exclui o itemId ativo</text>
+                      <text x="160" y="410" text-anchor="middle" font-size="14">Não criado: mantém conteúdo, limpa mapa</text>
+                    </g>
+                    <g>
+                      <rect x="12" y="456" width="296" height="84" rx="8" fill="var(--callout-bg)" stroke="var(--border)" stroke-width="2"></rect>
+                      <text x="160" y="484" text-anchor="middle" font-size="15" font-weight="700">Mídia e documento</text>
+                      <text x="160" y="508" text-anchor="middle" font-size="14">uma transação por mapa de repositório</text>
+                      <text x="160" y="528" text-anchor="middle" font-size="14">handler avalia propriedade e referências</text>
+                    </g>
+                    <g>
+                      <rect x="12" y="564" width="296" height="120" rx="8" fill="var(--mark-bg)" stroke="var(--border)" stroke-width="2"></rect>
+                      <text x="160" y="590" text-anchor="middle" font-size="14" font-weight="700">Clone criado e referenciado?</text>
+                      <text x="160" y="614" text-anchor="middle" font-size="14">Sim: mantém e registra aviso</text>
+                      <text x="160" y="638" text-anchor="middle" font-size="14">Criado e sem referências: remove clone</text>
+                      <text x="160" y="662" text-anchor="middle" font-size="14">Não criado: mantém item, limpa mapa</text>
+                    </g>
+                    <g>
+                      <rect x="12" y="708" width="296" height="84" rx="8" fill="var(--callout-bg)" stroke="var(--border)" stroke-width="2"></rect>
+                      <text x="160" y="736" text-anchor="middle" font-size="15" font-weight="700">GlobalLock.confirm antes do commit</text>
+                      <text x="160" y="760" text-anchor="middle" font-size="14">Lock perdido: rollback do item</text>
+                      <text x="160" y="780" text-anchor="middle" font-size="14">Lock válido: confirma a transação</text>
+                    </g>
+                    <g>
+                      <rect x="12" y="816" width="296" height="66" rx="8" fill="var(--callout-bg)" stroke="var(--border)" stroke-width="2"></rect>
+                      <text x="160" y="844" text-anchor="middle" font-size="15" font-weight="700">Próximo item ou FINISHED</text>
+                      <text x="160" y="868" text-anchor="middle" font-size="14">ao concluir, libera o lock</text>
+                    </g>
+                  </g>
+                </svg>
+                <figcaption>Leitura do fluxo: conteúdo vem antes dos clones de repositório; cada mapa é tratado em transação própria e repete as decisões antes de confirmar.</figcaption>
+              </figure>
+            </div>
+            <div class="adoption">
+              <h3>O que avaliar na adoção</h3>
+              <p>Se o destino puder receber edições após a migração, convém comparar uma revisão ou pedir confirmação antes de removê-lo. Quem adaptar o módulo deve gravar o id do locale de destino e o status do item na mesma transação que cria o conteúdo. Se o destino já tiver conteúdo migrado por outra ferramenta, sem mapa confiável, qualquer heurística de identificação serve só como lista de candidatos, a confirmar antes de excluir.</p>
+            </div>
+          </section>
+          <section class="content-section" id="incremental" aria-labelledby="incremental-title">
+            <h2 id="incremental-title">Incremental e alterações na origem</h2>
+            <div class="requirement">
+              <h3>Requisito RQ-08</h3>
+              <p>Uma nova execução copia o que ainda falta no destino, inclusive um item cujo destino foi apagado, sem duplicar o que já foi copiado; e o modo <code>UPDATE</code> reaplica a origem sobre os itens já mapeados. Detectar alterações e exclusões na origem fica fora do que o módulo atende.</p>
+            </div>
+            <div class="module-flow">
+              <h3>Como o módulo atende</h3>
+              <p>O módulo recria um conteúdo cujo destino foi apagado, mas não detecta mudanças nem exclusões na origem. No modo <mark>UPDATE</mark>, reaplica todos os itens mapeados, mesmo sem alteração; em sources versionadas, <code class="ref">lumis.<wbr>content.<wbr>table.<wbr>Content<wbr class="ref-camel">Table<wbr class="ref-camel">Source.<wbr>updateData</code> pode criar outra versão.</p>
+              <div class="table-wrap">
+                <table>
+                  <caption>Critérios de reprocessamento do módulo</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Modo</th>
+                      <th scope="col">Conteúdo</th>
+                      <th scope="col">Arquivos binários</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th scope="row">ADD_ONLY</th>
+                      <td><code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>copy.<wbr>ItemProcessor.<wbr>processOnce</code> ignora o item quando o mapa e o ContentLocale de destino ainda existem; se o locale desapareceu, copia o item novamente. <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>copy.<wbr>ItemProcessor.<wbr>countMigrated</code> aplica o mesmo critério ao total.</td>
+                      <td>O arquivo associado ao item existente não é reaplicado por esse caminho de cópia.</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">UPDATE</th>
+                      <td><code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>copy.<wbr>ItemProcessor.<wbr>isUpdateMode</code> habilita a regravação dos itens mapeados; o conteúdo não é comparado por data de modificação ou hash.</td>
+                      <td><code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>dependency.<wbr>Repository<wbr class="ref-camel">Cloner.<wbr>resolve</code> compara o fingerprint antes de atualizar mídia ou documento e evita regravar o binário quando ele não mudou.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <details>
+                <summary>Escopo do fingerprint dos arquivos</summary>
+                <p><code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>dependency.<wbr>FileCloner.<wbr>copy<wbr class="ref-camel">With<wbr class="ref-camel">Fingerprint</code> calcula SHA-256 e tamanho enquanto copia os bytes. Esse fingerprint é usado para arquivos de mídia e documento; não substitui uma comparação de versões do conteúdo.</p>
+              </details>
+              <p>A exclusão de um item na origem não é propagada ao destino, como registra o <a href="../../README.md">README do módulo</a>.</p>
+            </div>
+            <div class="adoption">
+              <h3>O que avaliar na adoção</h3>
+              <p>Se o projeto precisar refletir edições da origem sem regravar todos os itens, pode guardar no mapa a data de modificação ou um hash da versão copiada e compará-los antes do <code>updateData</code>. Se também precisar propagar exclusões, precisa definir um estado de remoção e sua regra de confirmação; o módulo não apaga itens do destino por causa de exclusões na origem (ver <a href="#ad-05">AD-05</a>).</p>
+            </div>
+          </section>
+          <section class="content-section" id="riscos-recomendacoes" aria-labelledby="riscos-recomendacoes-title">
+            <h2 id="riscos-recomendacoes-title">Riscos e recomendações</h2>
+            <div class="summary">
+              <h3>Síntese</h3>
+              <p>Os principais pontos de decisão são a <mark>atomicidade do item, a concorrência entre servidores e a segurança do Reverter</mark>. A tabela de riscos prioriza ações, indica o requisito de cada tema e mostra onde o módulo implementa cada proteção.</p>
+            </div>
+            <div class="module-flow">
+              <h3>Revisão técnica do módulo</h3>
+              <p>A revisão técnica do módulo corrigiu defeitos pontuais sem alterar o contrato público de <code>MigrationApi</code>. As decisões de produto e as verificações que dependem de outros ambientes permanecem para avaliação; os relatórios por área estão em <code>docs/internal/review/</code>.</p>
+              <div class="table-wrap">
+                <table>
+                  <caption>Áreas revisadas no módulo br.com.lumis.commons.contentmigrator</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Área</th>
+                      <th scope="col">Escopo</th>
+                      <th scope="col">Resultado</th>
+                      <th scope="col">Pontos de atenção</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th scope="row">Núcleo e persistência</th>
+                      <td>Configurações, datas, transações, lock e desfazer.</td>
+                      <td>A revisão ajustou a validação de updateMode, o tratamento de datas, o fallback de configurações, a ordem de aquisição dos locks e a preservação da exceção original.</td>
+                      <td>Restam decisões sobre estado após perda do lock, uso de MigRepoMap, limites de nome e relógio; Oracle e SQL Server não foram validados pelo conjunto de integração do módulo.</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Cópia e desfazer</th>
+                      <td>Workflow, locale, público, destinos de publicação, referências e slug.</td>
+                      <td>A revisão corrigiu o tratamento do workflow da origem, do locale em fontes sem idioma, da consulta de referências e dos contratos documentados.</td>
+                      <td>UPDATE pode criar versões sem mudança; algumas referências podem permanecer vazias se o destino ainda não foi migrado.</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Mídia e documento</th>
+                      <td>Links relativos, pastas, referências, website e caminhos de arquivos.</td>
+                      <td>A revisão corrigiu a escolha determinística de pastas, a consulta de referências, a troca do website em documentos e os avisos de transformação.</td>
+                      <td>Websites distintos, referências removidas e alguns casos de reuso ou remoção de arquivos não têm fixture local; UPDATE pode repetir cópias.</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">SPI, categorização, tags e widgets</th>
+                      <td>Embeds, repositórios, termos, referências e escopo do desfazer.</td>
+                      <td>A revisão corrigiu o tratamento de embeds órfãos, de repositórios ausentes, do locale de termos, da consulta de referências e de atributos com aspas simples.</td>
+                      <td>Termos sem versão publicada e dependências removidas após a criação seguem como decisões; alterações na configuração de categoria podem interromper uma execução.</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Adaptadores Lumis</th>
+                      <td>Permissões do mapeamento de widgets e traduções.</td>
+                      <td>A revisão verificou as permissões antes de expor o estado e alinhou as traduções pt-BR às chaves em inglês.</td>
+                      <td>Listas grandes podem consumir memória; a uniformidade das respostas REST sem acesso e a paginação permanecem para avaliação.</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Testes e infraestrutura</th>
+                      <td>Fixtures, limpeza, resolução reflexiva e restauração após deploy.</td>
+                      <td>A revisão tornou a limpeza verificável, aumentou a entropia dos IDs de fixtures, passou a rejeitar resoluções ambíguas e a restaurar o módulo após deploy incompleto.</td>
+                      <td>A regressão local foi executada com MySQL e Elasticsearch; o Tomcat permaneceu parado. Bancos alternativos, multi-website, integração social, carga e falha no fechamento da transação não foram cobertos.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <h3>Riscos e recomendações priorizados</h3>
+              <div class="table-wrap">
+                <table>
+                  <caption>Pontos que orientam a adoção e os ajustes</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Prioridade e tema</th>
+                      <th scope="col">O que observar</th>
+                      <th scope="col">Recomendação</th>
+                      <th scope="col">Onde o módulo mostra</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th scope="row">Alta — consistência e concorrência (RQ-02, RQ-06)</th>
+                      <td>Um status de item confirmado fora da transação que grava o conteúdo pode registrar sucesso sem conteúdo; <code>maxRunTime</code> também pode liberar o clock enquanto o tick segue ativo em outro servidor.</td>
+                      <td>Gravar conteúdo e status juntos por item e proteger cada execução com lock persistido.</td>
+                      <td><code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>copy.<wbr>ItemProcessor.<wbr>processOnce</code>; <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>lock.<wbr>GlobalLock.<wbr>acquire</code>.</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Alta — reverter documentos (RQ-07)</th>
+                      <td>A checagem de referência precisa consultar a hierarquia do repositório correto; edições no destino não impedem a remoção do conteúdo criado.</td>
+                      <td>Antes de excluir, conferir referências e definir como confirmar conteúdo alterado depois da cópia.</td>
+                      <td><code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>undo.<wbr>MigrationUndoer.<wbr>undoContent</code>; <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>dependency.<wbr>document.<wbr>Document<wbr class="ref-long">Dependency<wbr class="ref-long">Handler.<wbr>is<wbr class="ref-camel">Clone<wbr class="ref-camel">Referenced</code>.</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Decisão — modo UPDATE (RQ-08)</th>
+                      <td>Reaplicar item sem mudança pode criar versões; exclusões da origem não chegam ao destino.</td>
+                      <td>Definir a política de atualização e remoção antes de automatizar remigrações.</td>
+                      <td><code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>copy.<wbr>ItemProcessor.<wbr>isUpdateMode</code>; <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>copy.<wbr>ItemProcessor.<wbr>processOnce</code>.</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Média — dependências compartilhadas (RQ-05, RQ-07)</th>
+                      <td>Um clone pode ser usado por outro conteúdo ou migração; uma dependência pode mudar entre a configuração e a execução.</td>
+                      <td>Revalidar dependências no início e manter clones referenciados durante o Reverter.</td>
+                      <td><code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>copy.<wbr>ItemProcessor.<wbr>processOnce</code>; <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>undo.<wbr>MigrationUndoer.<wbr>repository<wbr class="ref-camel">Items</code>.</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Média — volume e compatibilidade (RQ-06)</th>
+                      <td>A descoberta mantém a lista de identificadores em memória; Oracle e SQL Server não foram validados pelo conjunto de integração do módulo.</td>
+                      <td>Avaliar paginação para lotes grandes e validar o banco alvo antes da implantação.</td>
+                      <td><code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>copy.<wbr>ItemProcessor.<wbr>discover</code>.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="adoption">
+              <h3>O que avaliar na adoção</h3>
+              <p>Na adoção, a ordem sugerida é tratar a atomicidade e o lock antes de ampliar o volume e, depois, definir as regras de reversão e atualização. Volume e compatibilidade orientam os ajustes seguintes.</p>
+            </div>
+          </section>
+          <section class="content-section" id="decisoes-adocao" aria-labelledby="decisoes-adocao-title">
+            <h2 id="decisoes-adocao-title">Decisões e informações necessárias na adoção</h2>
+            <div class="summary">
+              <h3>Síntese</h3>
+              <p>O código da plataforma esclarece AD-01 a AD-03. AD-04 a AD-07 dependem de decisões, dados de produção ou configurações de cada projeto; cada item indica o trecho do módulo que ajuda a avaliar o tema.</p>
+            </div>
+            <div class="module-flow">
+              <h3>Esclarecidas pelo código da plataforma</h3>
+              <ul>
+                <li id="ad-01"><strong>AD-01 — Estabilidade das mensagens de erro do clone de widget.</strong>
+                  <p>O portal não define essas mensagens como códigos estáveis. <code class="ref">lumis.<wbr>service.<wbr>pagepersonalization.<wbr>Page<wbr class="ref-camel">Personalization<wbr class="ref-camel">Util.<wbr>clone<wbr class="ref-camel">Widgets<wbr class="ref-camel">If<wbr class="ref-camel">Needed</code> lança uma mensagem com ids quando não encontra a versão; outra falha usa a chave localizada <code>STR_WIDGET_INSTANCE_DONT_EXISTS</code>, cujo texto varia por idioma. A dependência do texto deixa de existir quando a chave primária da origem sai do <code>addData</code>, como descreve a seção <a href="#campos-html-widgets">Campos HTML e widgets embutidos</a> (RQ-04). Se uma implementação mantiver a detecção pelo texto, convém cobrir o caminho com um teste de regressão.</p>
+                </li>
+                <li id="ad-02"><strong>AD-02 — Execução por clock e <code>maxRunTime</code>.</strong>
+                  <p><code class="ref">lumis.<wbr>portal.<wbr>clock.<wbr>ClockManager.<wbr>checkMaxRunTime</code> limpa <code>running</code> no banco, mas não interrompe a thread nem desfaz a transação. <code class="ref">lumis.<wbr>portal.<wbr>clock.<wbr>ClockManager.<wbr>executeSchedule</code> confirma o tick se <code>doTick</code> retornar normalmente. Em outro servidor, o clock pode ser selecionado enquanto a execução anterior ainda continua. Um projeto que prefira clock ao executor usado pelo módulo precisa do lock e do orçamento por tick descritos na seção <a href="#clock-transacao-volume-maxtime">Clock, transação, volume e maxRunTime</a> (RQ-06).</p>
+                </li>
+                <li id="ad-03"><strong>AD-03 — Mudança de tipo de coluna em tabelas já instaladas.</strong>
+                  <p>Alterar o tipo de uma coluna na definição de tabelas prepara apenas instalações novas; converter a coluna em instalações existentes requer um passo em <code>component-upgrade-script.xml</code>. <code class="ref">lumis.<wbr>portal.<wbr>deployment.<wbr>Deployment<wbr class="ref-camel">Script<wbr class="ref-camel">Manager.<wbr>get<wbr class="ref-long">Component<wbr class="ref-long">Upgrade<wbr class="ref-long">Scritp<wbr class="ref-long">Steps</code> seleciona os passos do upgrade conforme o último passo registrado, e <code class="ref">lumis.<wbr>portal.<wbr>deployment.<wbr>stepexecutable.<wbr>script.<wbr>Run<wbr class="ref-camel">Sql<wbr class="ref-camel">Step<wbr class="ref-camel">Executable.<wbr>getSQL</code> escolhe o SQL do banco configurado. Antes da conversão, é preciso conferir os valores já gravados; manter o tipo existente pode ser a decisão de compatibilidade do projeto. O mesmo vale para as tabelas de controle deste módulo quando seu esquema mudar.</p>
+                </li>
+              </ul>
+              <h3>Decisões e informações de cada projeto</h3>
+              <ul>
+                <li id="ad-04"><strong>AD-04 — Uso do Reverter com documentos.</strong>
+                  <p>Cada projeto confirma se vai reverter migrações que incluem documentos. A checagem de filhos precisa consultar a hierarquia de documentos, como mostra <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>dependency.<wbr>document.<wbr>Document<wbr class="ref-long">Dependency<wbr class="ref-long">Handler.<wbr>is<wbr class="ref-camel">Clone<wbr class="ref-camel">Referenced</code>. A resposta muda a prioridade dos testes de reversão com documentos, não a tabela que a ferramenta deve consultar.</p>
+                </li>
+                <li id="ad-05"><strong>AD-05 — Política incremental.</strong>
+                  <p>É uma decisão de negócio de cada projeto: aceitar que <code>ADD_ONLY</code> copie só o que falta e <code>UPDATE</code> reaplique todos os itens mapeados, ou implementar detecção de alterações. A seção <a href="#incremental">Incremental e alterações na origem</a> (RQ-08) contrasta o modo <code>ADD_ONLY</code>, o modo <code>UPDATE</code> e a detecção de alterações.</p>
+                </li>
+                <li id="ad-06"><strong>AD-06 — Volume típico de uma migração.</strong>
+                  <p>Cada projeto informa esse dado de produção para dimensionar a paginação e, se usar clock, um orçamento cooperativo por tick. <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>copy.<wbr>ItemProcessor.<wbr>discover</code> mantém os identificadores em memória, e <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>config.<wbr>Execution<wbr class="ref-camel">Settings.<wbr>item<wbr class="ref-camel">Time<wbr class="ref-camel">Limit<wbr class="ref-camel">Millis</code> define o tempo máximo de um item antes de pausar a renovação do heartbeat.</p>
+                </li>
+                <li id="ad-07"><strong>AD-07 — Idiomas do portal.</strong>
+                  <p>Cada projeto confirma a configuração e a aceitação dos idiomas na instância de destino. <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>copy.<wbr>ContentCopier.<wbr>validateLocale</code> valida o locale, e <code class="ref">br.<wbr>com.<wbr>lumis.<wbr>commons.<wbr>contentmigrator.<wbr>service.<wbr>contentmigration.<wbr>copy.<wbr>ItemProcessor.<wbr>query<wbr class="ref-camel">Origin<wbr class="ref-camel">Items</code> prioriza o idioma padrão na descoberta.</p>
+                </li>
+              </ul>
+            </div>
+          </section>
+          <section class="content-section" id="termos-usados" aria-labelledby="termos-usados-title">
+            <h2 id="termos-usados-title">Termos usados</h2>
+            <div class="module-flow">
+              <h3>Vocabulário deste documento</h3>
+              <div class="table-wrap">
+                <table>
+                  <caption>Termos usados neste documento</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Termo</th>
+                      <th scope="col">Significado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><th scope="row">Execução</th><td>Uma migração iniciada e processada em segundo plano.</td></tr>
+                    <tr><th scope="row">Item da migração</th><td>Um <code>ContentLocale</code> da origem, unidade de cópia e reversão; objetos de mídia e documento são chamados de itens do repositório.</td></tr>
+                    <tr><th scope="row">Mapa</th><td>Registro que liga o item da origem ao correspondente no destino.</td></tr>
+                    <tr><th scope="row">Lock</th><td>Registro único no banco que permite uma execução por vez, de cópia ou reversão, entre todas as migrações e servidores.</td></tr>
+                    <tr><th scope="row">Clone</th><td>Dependência de repositório criada ou reutilizada no destino e acompanhada pelo mapa. Para HTML, o termo é instância de widget.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+          <section class="content-section" id="proximos-passos" aria-labelledby="proximos-passos-title">
+            <h2 id="proximos-passos-title">Próximos passos na adoção</h2>
+            <div class="summary">
+              <h3>Síntese</h3>
+              <p>Este documento serve de referência para analisar, testar e decidir a adoção ou a adaptação do módulo em um projeto LumisXP.</p>
+            </div>
+            <div class="module-flow">
+              <h3>Próximos passos sugeridos</h3>
+              <ol>
+                <li>Analisar os requisitos RQ-01 a RQ-08 e identificar quais se aplicam ao projeto e às suas prioridades.</li>
+                <li>Responder às decisões AD-01 a AD-07 com os dados, as políticas e as configurações do projeto.</li>
+                <li>Validar o módulo em ambiente de homologação, com as integrações, permissões e configurações de destino previstas.</li>
+                <li>Executar em homologação cenários com dados representativos para verificar cópia, atualização, reversão, dependências, volume e idiomas.</li>
+                <li>Com a análise e os testes concluídos, definir as adaptações necessárias antes do uso em produção.</li>
+              </ol>
+              <p>Este documento descreve o comportamento observado no código do módulo e nas fontes da plataforma citadas; ele não substitui os testes de cada projeto em homologação.</p>
+            </div>
+          </section>
+        </article>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

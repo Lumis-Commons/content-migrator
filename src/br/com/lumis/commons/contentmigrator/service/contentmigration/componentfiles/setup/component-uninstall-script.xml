@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component-uninstall xmlns="http://www.lumis.com.br/lumisportal/xsd/component-uninstall-script" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<run-sql>
+		<sql>drop table lum_cmig_MigLock</sql>
+	</run-sql>
+	<run-sql>
+		<sql>drop table lum_cmig_MigWidgetMap</sql>
+	</run-sql>
+	<run-sql>
+		<sql>drop table lum_cmig_MigRepoMap</sql>
+	</run-sql>
+	<run-sql>
+		<sql>drop table lum_cmig_MigItemMap</sql>
+	</run-sql>
+	<run-sql>
+		<sql>drop table lum_cmig_Migration</sql>
+	</run-sql>
+</component-uninstall>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lumis-module xmlns="http://www.lumis.com.br/lumisportal/xsd/module">
+	<id>br.com.lumis.commons.contentmigrator</id>
+	<version>1.0</version>
+	<display-name>Content Migrator</display-name>
+</lumis-module>

@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<strings>
+	<string id="STR_SERVICE_NAME">Migração de conteúdo</string>
+	<string id="STR_SERVICE_DESCRIPTION">Migra conteúdo entre instâncias de serviço</string>
+	<string id="STR_ADMINISTRATION">Administração</string>
+	<string id="STR_ADD_MIGRATION">Nova migração</string>
+	<string id="STR_CREATE">Criar</string>
+	<string id="STR_SERVICE">Serviço</string>
+	<string id="STR_ORIGIN">Origem</string>
+	<string id="STR_DESTINATION">Destino</string>
+	<string id="STR_START_INCREMENTAL">Iniciar incremental</string>
+	<string id="STR_START_UPDATE">Iniciar atualização</string>
+	<string id="STR_STOP">Parar</string>
+	<string id="STR_DELETE">Excluir</string>
+	<string id="STR_UNDO">Desfazer</string>
+	<string id="STR_ERROR_DETAILS">Detalhes do erro</string>
+	<string id="STR_ERROR_DETAILS_TITLE">Detalhes do erro da migração</string>
+	<string id="STR_MAP_WIDGET">Mapear widget</string>
+	<string id="STR_WIDGET_MAPPING_TITLE">Mapeamento de widget</string>
+	<string id="STR_BLOCKED_CONTENT_TITLE">Conteúdo bloqueante</string>
+	<string id="STR_BLOCKED_CONTENT_INTRODUCTION">Introdução</string>
+	<string id="STR_ORIGIN_WIDGET">Widget de origem</string>
+	<string id="STR_DESTINATION_WIDGET">Widget de destino</string>
+	<string id="STR_WIDGET_MAPPING_INSTRUCTION">Crie um widget paralelo no repositório de widgets do destino, configure-o para o contexto de destino e <!--
+		-->selecione-o abaixo. O widget de origem permanece somente para consulta.</string>
+	<string id="STR_SAVE_WIDGET_MAPPING">Salvar mapeamento</string>
+	<string id="STR_MODE_ADD_ONLY">Incremental</string>
+	<string id="STR_MODE_UPDATE">Atualização</string>
+	<string id="STR_CONFIRM_DELETE_MIGRATION">Excluir esta migração e seus mapeamentos? Os conteúdos migrados serão mantidos. Se você recriar uma <!--
+		-->migração para o mesmo par, os conteúdos e clones existentes no destino poderão ser duplicados.</string>
+	<string id="STR_CONFIRM_UNDO_MIGRATION">Desfazer esta migração? Conteúdos criados por ela e sem referências serão removidos. Objetos referenciados <!--
+		-->por outros conteúdos serão mantidos, assim como os mapeamentos de widgets.</string>
+	<string id="STR_STATUS_STOPPED">Parado</string>
+	<string id="STR_STATUS_STOPPED_WITH_ERROR">Parado com erro</string>
+	<string id="STR_STATUS_RUNNING">Em execução</string>
+	<string id="STR_STATUS_FINISHED">Finalizado</string>
+	<string id="STR_ID">Identificador</string>
+	<string id="STR_NAME">Nome</string>
+	<string id="STR_SERVICEID">Serviço</string>
+	<string id="STR_ORIGINSERVICEINSTANCEID">Instância de origem</string>
+	<string id="STR_DESTSERVICEINSTANCEID">Instância de destino</string>
+	<string id="STR_UPDATEMODE">Modo de atualização</string>
+	<string id="STR_OPERATION">Operação</string>
+	<string id="STR_STATUS">Status</string>
+	<string id="STR_STOPREQUESTED">Parada solicitada</string>
+	<string id="STR_TOTALCOUNT">Total</string>
+	<string id="STR_MIGRATEDCOUNT">Migrados</string>
+	<string id="STR_HEARTBEAT">Último sinal</string>
+	<string id="STR_CREATEDDATE">Criada em</string>
+	<string id="STR_STARTDATE">Início</string>
+	<string id="STR_ENDDATE">Fim</string>
+	<string id="STR_AUTHOR">Autor</string>
+	<string id="STR_ERRORTYPE">Tipo do erro</string>
+	<string id="STR_ERRORMESSAGE">Mensagem de erro</string>
+	<string id="STR_ERRORSTACK">Detalhe do erro</string>
+	<string id="STR_BLOCKINGORIGINITEMID">ID do item de origem que bloqueou</string>
+	<string id="STR_BLOCKINGWIDGETCONTENTID">ID do conteúdo do widget bloqueante</string>
+	<string id="STR_KIND">Tipo</string>
+	<string id="STR_SOURCEID">ID da fonte</string>
+	<string id="STR_LOCALE">Localidade</string>
+	<string id="STR_WARNINGS">Avisos</string>
+	<string id="STR_DESTCREATED">Destino criado pela migração</string>
+	<string id="STR_ORIGINCONTENTID">ID do conteúdo de origem</string>
+	<string id="STR_ORIGINCONTENTLOCALEID">ID da localidade do conteúdo de origem</string>
+	<string id="STR_ORIGINITEMID">ID do item de origem</string>
+	<string id="STR_ORIGINFILEFINGERPRINT">Hash do arquivo de origem</string>
+	<string id="STR_DESTCONTENTID">ID do conteúdo de destino</string>
+	<string id="STR_DESTCONTENTLOCALEID">ID da localidade do conteúdo de destino</string>
+	<string id="STR_DESTITEMID">ID do item de destino</string>
+	<string id="STR_ORIGINREPOINSTANCEID">ID da instância do repositório de origem</string>
+	<string id="STR_DESTREPOINSTANCEID">ID da instância do repositório de destino</string>
+	<string id="STR_DEPENDENCYTYPE">Tipo de dependência</string>
+	<string id="STR_ORIGINWIDGETCONTENTID">ID do conteúdo do widget de origem</string>
+	<string id="STR_DESTWIDGETCONTENTID">ID do conteúdo do widget de destino</string>
+	<string id="STR_RUNID">ID da execução</string>
+	<string id="STR_MIGRATIONID">ID da migração</string>
+</strings>
