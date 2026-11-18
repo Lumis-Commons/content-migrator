@@ -24,6 +24,7 @@ import lumis.portal.PortalConfiguration;
 import lumis.portal.channel.ChannelConfig;
 import lumis.portal.dao.hibernate.ITransactionHibernate;
 import lumis.portal.manager.ManagerFactory;
+import lumis.portal.privacyterm.IPrivacyTermManagerSPI;
 import lumis.portal.serviceinstance.ServiceInstanceConfig;
 import lumis.portal.serviceinstance.ServiceInstanceDependencyConfig;
 import lumis.portal.transaction.ITransaction;
@@ -38,6 +39,13 @@ public class AdminFormValidationTest
 	private static final String DUPLICATE_PAIR = "DUPLICATE_PAIR";
 
 	private static final String MEDIA_DEPENDENCY = "media_repository";
+
+	/**
+	 * Dependency type used by the native e-mail template repository.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private static final String EMAIL_TEMPLATE = ServiceInstanceDependencyConfig.DEPENDENCY_TYPE_EMAIL_TEMPLATE_REPOSITORY;
 
 	private PortalFixture fixture;
 
@@ -120,6 +128,11 @@ public class AdminFormValidationTest
 		});
 	}
 
+	/**
+	 * Verifies that creation preserves the API error code and diagnostic alongside the structured list.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
 	@Test
 	public void creationRejectsDependencyRulesAndDuplicatePairs() throws Exception
 	{
@@ -138,6 +151,10 @@ public class AdminFormValidationTest
 		{
 			assertEquals(RULES_VIOLATED, ModuleBridge.errorCode(e));
 			assertTrue(e.getMessage(), e.getMessage().contains(MEDIA_DEPENDENCY));
+			assertTrue(e.getMessage(), e.getMessage().startsWith(RULES_VIOLATED + ": The origin instance uses a "));
+			List<?> violations = (List<?>) e.getClass().getMethod("getViolations").invoke(e);
+			assertEquals(1, violations.size());
+			assertEquals(MEDIA_DEPENDENCY, violations.getFirst().getClass().getMethod("getDependencyType").invoke(violations.getFirst()));
 		}
 
 		ServiceInstanceConfig validOrigin = hierarchicalContent();
@@ -153,6 +170,83 @@ public class AdminFormValidationTest
 		catch (Exception e)
 		{
 			assertEquals(DUPLICATE_PAIR, ModuleBridge.errorCode(e));
+		}
+	}
+
+	/**
+	 * Rejects a different or missing e-mail template repository at creation and accepts the same
+	 * repository for the same pair of service instances.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	@Test
+	public void creationRequiresTheSameEmailTemplateRepository() throws Exception
+	{
+		ServiceInstanceConfig repository = service("lumis.service.emailtemplaterepository");
+		ServiceInstanceConfig otherRepository = service("lumis.service.emailtemplaterepository");
+		ServiceInstanceConfig origin = hierarchicalContent();
+		ServiceInstanceConfig destination = hierarchicalContent();
+		String selection = fixture.addHierarchicalContent(origin, "shared e-mail repository", null, true);
+		fixture.setDependency(repository, origin, EMAIL_TEMPLATE);
+
+		removeDependency(destination, EMAIL_TEMPLATE);
+		assertSharedRepositoryRejected(origin, destination, selection, EMAIL_TEMPLATE);
+
+		fixture.setDependency(otherRepository, destination, EMAIL_TEMPLATE);
+		assertSharedRepositoryRejected(origin, destination, selection, EMAIL_TEMPLATE);
+
+		fixture.setDependency(repository, destination, EMAIL_TEMPLATE);
+		String migrationId = (String) create(origin, destination, selection).get("id");
+		assertNotNull(migrationId);
+		migrationIds.add(migrationId);
+	}
+
+	/**
+	 * Rejects a missing or different privacy term repository and accepts the shared instance at creation.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	@Test
+	public void creationRequiresTheSamePrivacyTermRepository() throws Exception
+	{
+		String type = IPrivacyTermManagerSPI.DEPENDENCY_TYPE_PRIVACYTERM_REPOSITORY;
+		ServiceInstanceConfig repository = service("lumis.service.privacyterm");
+		ServiceInstanceConfig otherRepository = service("lumis.service.privacyterm");
+		ServiceInstanceConfig origin = hierarchicalContent();
+		ServiceInstanceConfig destination = hierarchicalContent();
+		String selection = fixture.addHierarchicalContent(origin, "shared privacy term repository", null, true);
+		fixture.setDependency(repository, origin, type);
+
+		removeDependency(destination, type);
+		assertSharedRepositoryRejected(origin, destination, selection, type);
+
+		fixture.setDependency(otherRepository, destination, type);
+		assertSharedRepositoryRejected(origin, destination, selection, type);
+
+		fixture.setDependency(repository, destination, type);
+		String migrationId = (String) create(origin, destination, selection).get("id");
+		assertNotNull(migrationId);
+		migrationIds.add(migrationId);
+	}
+
+	/**
+	 * Checks the API error envelope and its repository violation message.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private void assertSharedRepositoryRejected(ServiceInstanceConfig origin, ServiceInstanceConfig destination, String selection, String dependencyType)
+			throws Exception
+	{
+		try
+		{
+			migrationIds.add((String) create(origin, destination, selection).get("id"));
+			fail("expected creation to require the same " + dependencyType + " instance");
+		}
+		catch (Exception e)
+		{
+			assertEquals(RULES_VIOLATED, ModuleBridge.errorCode(e));
+			assertTrue(e.getMessage(), e.getMessage().contains(dependencyType));
+			assertTrue(e.getMessage(), e.getMessage().contains("the destination instance must use the same one as the origin instance"));
 		}
 	}
 
@@ -180,13 +274,29 @@ public class AdminFormValidationTest
 		});
 	}
 
+	/**
+	 * Creates a migration selecting new published content.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
 	private Map<String, Object> create(ServiceInstanceConfig origin, ServiceInstanceConfig destination) throws Exception
+	{
+		return create(origin, destination, fixture.addHierarchicalContent(origin, "root", null, true));
+	}
+
+	/**
+	 * Creates a migration with an existing selection to compare changes to the repository dependency.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	@SuppressWarnings("unchecked")
+	private Map<String, Object> create(ServiceInstanceConfig origin, ServiceInstanceConfig destination, String selection) throws Exception
 	{
 		Map<String, Object> params = new HashMap<>();
 		params.put("name", "admin validation " + origin.getId());
 		params.put("originServiceInstanceId", origin.getId());
 		params.put("destServiceInstanceId", destination.getId());
-		params.put("selectedContentIds", fixture.addHierarchicalContent(origin, "root", null, true));
+		params.put("selectedContentIds", selection);
 		return (Map<String, Object>) ModuleBridge.api("create", params);
 	}
 

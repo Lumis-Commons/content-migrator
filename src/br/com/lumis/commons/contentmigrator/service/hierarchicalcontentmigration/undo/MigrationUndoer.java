@@ -283,6 +283,9 @@ public final class MigrationUndoer
 	/**
 	 * Discovers owned repository-clone maps for repository pairs not shared with another migration,
 	 * ordering children and files before parent folders or terms.
+	 * Legacy maps for the same origin and destination repository are left for migration deletion.
+	 *
+	 * @since %LUM_NEXT_VERSION%
 	 */
 	public static List<UndoItem> repositoryItems(SessionConfig session, String migrationId, String originServiceInstanceId, String destinationServiceInstanceId)
 			throws Exception
@@ -294,6 +297,10 @@ public final class MigrationUndoer
 			List<UndoItem> result = new ArrayList<>();
 			for (RepositoryPair pair : repositoryPairs(session, transaction, originServiceInstanceId, destinationServiceInstanceId))
 			{
+				if (pair.getOriginRepositoryId().equals(pair.getDestinationRepositoryId()))
+				{
+					continue;
+				}
 				if (isRepositoryPairUsedByAnother(connection, session, transaction, migrationId, pair))
 				{
 					continue;

@@ -1,6 +1,5 @@
 package br.com.lumis.commons.contentmigrator.service.hierarchicalcontentmigration.exception;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -13,11 +12,15 @@ public class RulesViolatedException extends IllegalArgumentException
 
 	private final List<RuleViolation> violations;
 
-	/** Creates an exception aggregating the messages of all detected dependency rule violations. */
+	/**
+	 * Creates an exception aggregating the messages of all detected dependency rule violations.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
 	public RulesViolatedException(List<RuleViolation> violations)
 	{
 		super(violations.stream().map(RuleViolation::getMessage).collect(Collectors.joining(" ")));
-		this.violations = Collections.unmodifiableList(violations);
+		this.violations = List.copyOf(violations);
 	}
 
 	/** Returns the unmodifiable list of dependency rule violations. */

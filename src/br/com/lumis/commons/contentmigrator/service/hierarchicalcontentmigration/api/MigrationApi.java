@@ -365,6 +365,11 @@ public class MigrationApi
 		}
 	}
 
+	/**
+	 * Exposes dependency rule failures as structured API validation errors.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
 	private static void checkCreationRules(SessionConfig session, String originInstanceId, String destinationInstanceId, ITransaction transaction) throws Exception
 	{
 		try
@@ -373,7 +378,7 @@ public class MigrationApi
 		}
 		catch (RulesViolatedException exception)
 		{
-			throw new MigrationApiException(MigrationApiException.ERROR_RULES_VIOLATED, exception.getMessage());
+			throw new MigrationApiException(exception);
 		}
 	}
 

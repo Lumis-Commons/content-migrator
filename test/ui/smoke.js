@@ -339,6 +339,35 @@ async function main() {
             assert.doesNotMatch(body, /STR_/);
             if (warnings !== popup) await warnings.close();
         });
+        await runCase('popup creation shows both rule violations with the accented instance names', async () => {
+            await setLocale(popup, 'pt_BR');
+            await popup.goto(popupUrl);
+            await waitForRerender(popup, () => popup.locator('#originServiceInstanceId').selectOption(ids.violationOriginId));
+            await popup.locator(checkbox(ids.violationRootId)).check();
+            await popup.locator('#name').fill('ui-smoke-two-violations');
+            await popup.locator('#destServiceInstanceId').selectOption(ids.violationDestinationId);
+            const dialogText = popup.waitForEvent('dialog', { timeout: 20000 }).then(async dialog => {
+                const text = dialog.message();
+                await dialog.accept();
+                return text;
+            });
+            await createButton(popup).click();
+            const message = await dialogText;
+            const lines = message.split('\n').filter(line => line.startsWith('• '));
+            assert.equal(lines.length, 2, `Expected two violation lines in: ${message}`);
+            assert.match(message.split('\n')[0], /não atendem aos requisitos/);
+            const media = lines.filter(line => /mídia/.test(line));
+            const email = lines.filter(line => /modelos de e-mail/.test(line));
+            assert.equal(media.length, 1, `Missing media repository line in: ${message}`);
+            assert.equal(email.length, 1, `Missing e-mail template line in: ${message}`);
+            assert.notEqual(media[0], email[0]);
+            for (const line of lines) {
+                assert.ok(line.includes(ids.violationOriginName) || line.includes(ids.violationDestinationName),
+                    `Instance name missing or mangled in: ${line}`);
+            }
+            assert.ok(media[0].includes(ids.violationDestinationName), `Media line must name the destination: ${media[0]}`);
+            assert.doesNotMatch(message, /STR_|\{\d\}|&amp;|&#|Ã|�/);
+        });
         if (failures.length) {
             await popup.screenshot({ path: 'target/ui-smoke-failure.png', fullPage: true });
             fs.writeFileSync('target/ui-smoke-failure.txt', failures.join('\n'));

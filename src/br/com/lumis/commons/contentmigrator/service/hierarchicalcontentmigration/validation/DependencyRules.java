@@ -9,10 +9,13 @@ import java.util.Objects;
 import org.w3c.dom.Node;
 
 import br.com.lumis.commons.contentmigrator.service.hierarchicalcontentmigration.dto.RuleViolation;
+import br.com.lumis.commons.contentmigrator.service.hierarchicalcontentmigration.dto.RuleViolation.InstanceReference;
+import br.com.lumis.commons.contentmigrator.service.hierarchicalcontentmigration.dto.RuleViolation.WorkflowReference;
 import br.com.lumis.commons.contentmigrator.service.hierarchicalcontentmigration.exception.RulesViolatedException;
 import lumis.content.ContentManagerFactory;
 import lumis.content.workflow.WorkflowConfig;
 import lumis.doui.DouiManagerFactory;
+import lumis.portal.PortalException;
 import lumis.portal.authentication.SessionConfig;
 import lumis.portal.manager.ManagerFactory;
 import lumis.portal.privacyterm.IPrivacyTermManagerSPI;
@@ -37,15 +40,40 @@ import lumis.util.XmlUtil;
  */
 public final class DependencyRules
 {
-	public static final String RULE_REPOSITORY_REQUIRED = "REPOSITORY_REQUIRED";
+	/**
+	 * Alias for {@link RuleViolation#RULE_REPOSITORY_REQUIRED}.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	public static final String RULE_REPOSITORY_REQUIRED = RuleViolation.RULE_REPOSITORY_REQUIRED;
 
-	public static final String RULE_REPOSITORY_NOT_SHARED = "REPOSITORY_NOT_SHARED";
+	/**
+	 * Alias for {@link RuleViolation#RULE_REPOSITORY_NOT_SHARED}.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	public static final String RULE_REPOSITORY_NOT_SHARED = RuleViolation.RULE_REPOSITORY_NOT_SHARED;
 
-	public static final String RULE_DIFFERENT_WORKFLOW = "DIFFERENT_WORKFLOW";
+	/**
+	 * Alias for {@link RuleViolation#RULE_DIFFERENT_WORKFLOW}.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	public static final String RULE_DIFFERENT_WORKFLOW = RuleViolation.RULE_DIFFERENT_WORKFLOW;
 
-	public static final String RULE_FILES_FIELD = "FILES_FIELD";
+	/**
+	 * Alias for {@link RuleViolation#RULE_FILES_FIELD}.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	public static final String RULE_FILES_FIELD = RuleViolation.RULE_FILES_FIELD;
 
-	public static final String RULE_TABLE_SOURCE = "TABLE_SOURCE";
+	/**
+	 * Alias for {@link RuleViolation#RULE_TABLE_SOURCE}.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	public static final String RULE_TABLE_SOURCE = RuleViolation.RULE_TABLE_SOURCE;
 
 	public static final String SERVICE_TYPE_CONTENT = "lum_content";
 
@@ -85,88 +113,138 @@ public final class DependencyRules
 	/**
 	 * Evaluates every creation rule for a migration from the origin to the destination instance and
 	 * returns the broken rules, or an empty list when the migration can be created.
+	 *
+	 * @since %LUM_NEXT_VERSION%
 	 */
 	public static List<RuleViolation> validate(SessionConfig session, String originServiceInstanceId, String destinationServiceInstanceId, ITransaction transaction)
 			throws Exception
 	{
-		List<RuleViolation> violations = new ArrayList<>();
+		List<RuleViolation.Builder> violations = new ArrayList<>();
 		checkRequiredRepositories(session, originServiceInstanceId, destinationServiceInstanceId, transaction, violations);
 		checkSharedRepositories(session, originServiceInstanceId, destinationServiceInstanceId, transaction, violations);
 		checkWorkflowCompatibility(session, originServiceInstanceId, destinationServiceInstanceId, transaction, violations);
-		checkServiceDefinitionSources(session, originServiceInstanceId, transaction, violations);
-		return violations;
+		ServiceInstanceConfig origin = ManagerFactory.getServiceInstanceManager().get(originServiceInstanceId, transaction);
+		checkServiceDefinitionSources(session, origin, transaction, violations);
+		if (violations.isEmpty())
+		{
+			return List.of();
+		}
+
+		ServiceInstanceConfig destination = ManagerFactory.getServiceInstanceManager().get(destinationServiceInstanceId, transaction);
+		InstanceReference originReference = instanceReference(session, origin, transaction);
+		InstanceReference destinationReference = instanceReference(session, destination, transaction);
+		return violations.stream().map(violation -> violation.instances(originReference, destinationReference).build()).toList();
 	}
 
+	/**
+	 * Collects violations for required repositories that are missing from the destination.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
 	private static void checkRequiredRepositories(
 			SessionConfig session,
 			String originServiceInstanceId,
 			String destinationServiceInstanceId,
 			ITransaction transaction,
-			List<RuleViolation> violations) throws Exception
+			List<RuleViolation.Builder> violations) throws Exception
 	{
 		for (String type : REQUIRED_REPOSITORY_TYPES)
 		{
-			boolean hasOriginRepository = repository(session, originServiceInstanceId, type, transaction) != null;
-			boolean hasDestinationRepository = repository(session, destinationServiceInstanceId, type, transaction) != null;
-			if (hasOriginRepository && !hasDestinationRepository)
+			ServiceInstanceConfig originRepository = repositoryConfig(session, originServiceInstanceId, type, transaction);
+			ServiceInstanceConfig destinationRepository = repositoryConfig(session, destinationServiceInstanceId, type, transaction);
+			if (originRepository != null && destinationRepository == null)
 			{
-				violations.add(new RuleViolation(RULE_REPOSITORY_REQUIRED, type, "The origin instance uses a " + type + " and the destination instance has none."));
+				violations.add(RuleViolation.builder(
+						RULE_REPOSITORY_REQUIRED, type, "The origin instance uses a " + type + " and the destination instance has none.")
+						.repositories(type, instanceReference(session, originRepository, transaction), null));
 			}
 		}
 	}
 
+	/**
+	 * Collects violations for repositories that the destination must share.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
 	private static void checkSharedRepositories(
 			SessionConfig session,
 			String originServiceInstanceId,
 			String destinationServiceInstanceId,
 			ITransaction transaction,
-			List<RuleViolation> violations) throws Exception
+			List<RuleViolation.Builder> violations) throws Exception
 	{
 		for (String type : SHARED_REPOSITORY_TYPES)
 		{
-			String originRepository = repository(session, originServiceInstanceId, type, transaction);
-			String destinationRepository = repository(session, destinationServiceInstanceId, type, transaction);
-			if (originRepository != null && !originRepository.equals(destinationRepository))
+			ServiceInstanceConfig originRepository = repositoryConfig(session, originServiceInstanceId, type, transaction);
+			ServiceInstanceConfig destinationRepository = repositoryConfig(session, destinationServiceInstanceId, type, transaction);
+			if (originRepository != null && (destinationRepository == null || !originRepository.getId().equals(destinationRepository.getId())))
 			{
 				violations.add(
-						new RuleViolation(
+						RuleViolation.builder(
 								RULE_REPOSITORY_NOT_SHARED,
 								type,
-								"The " + type + " is not migrated: the destination instance must use the same one as the origin instance."));
+								"The " + type + " is not migrated: the destination instance must use the same one as the origin instance.")
+								.repositories(type, instanceReference(session, originRepository, transaction),
+										instanceReference(session, destinationRepository, transaction)));
 			}
 		}
 	}
 
+	/**
+	 * Collects a violation when the workflow configurations differ.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
 	private static void checkWorkflowCompatibility(
 			SessionConfig session,
 			String originServiceInstanceId,
 			String destinationServiceInstanceId,
 			ITransaction transaction,
-			List<RuleViolation> violations) throws Exception
+			List<RuleViolation.Builder> violations) throws Exception
 	{
-		String originWorkflow = getWorkflowId(session, originServiceInstanceId, transaction);
-		String destinationWorkflow = getWorkflowId(session, destinationServiceInstanceId, transaction);
-		if (!Objects.equals(originWorkflow, destinationWorkflow))
+		WorkflowConfig originWorkflow = ContentManagerFactory.getWorkflowManager().getServiceInstanceWorkflow(session, originServiceInstanceId, transaction);
+		WorkflowConfig destinationWorkflow = ContentManagerFactory.getWorkflowManager().getServiceInstanceWorkflow(session, destinationServiceInstanceId,
+				transaction);
+		if (!Objects.equals(originWorkflow == null ? null : originWorkflow.getId(), destinationWorkflow == null ? null : destinationWorkflow.getId()))
 		{
 			violations.add(
-					new RuleViolation(
+					RuleViolation.builder(
 							RULE_DIFFERENT_WORKFLOW,
 							null,
-							"The origin instance uses the workflow " + originWorkflow + " and the destination instance uses " + destinationWorkflow
-									+ "; both must use the same workflow."));
+							"The origin instance uses the workflow " + workflowLabel(originWorkflow) + " and the destination instance uses "
+									+ workflowLabel(destinationWorkflow) + "; both must use the same workflow.")
+							.workflows(workflowReference(originWorkflow), workflowReference(destinationWorkflow)));
 		}
 	}
 
-	private static String getWorkflowId(SessionConfig session, String serviceInstanceId, ITransaction transaction) throws Exception
+	/**
+	 * Describes a workflow for the English diagnostic message.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private static String workflowLabel(WorkflowConfig workflow)
 	{
-		WorkflowConfig workflow = ContentManagerFactory.getWorkflowManager().getServiceInstanceWorkflow(session, serviceInstanceId, transaction);
-		return workflow == null ? null : workflow.getId();
+		return workflow == null ? "none" : workflow.getId();
 	}
 
-	private static void checkServiceDefinitionSources(SessionConfig session, String originServiceInstanceId, ITransaction transaction, List<RuleViolation> violations)
-			throws Exception
+	/**
+	 * Captures the workflow identity and the resource that localizes its name.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private static WorkflowReference workflowReference(WorkflowConfig workflow) throws PortalException
 	{
-		ServiceInstanceConfig origin = ManagerFactory.getServiceInstanceManager().get(originServiceInstanceId, transaction);
+		return workflow == null ? null : new WorkflowReference(workflow.getId(), workflow.getName(), workflow.getResource());
+	}
+
+	/**
+	 * Collects violations for unsupported sources and fields.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private static void checkServiceDefinitionSources(SessionConfig session, ServiceInstanceConfig origin, ITransaction transaction,
+			List<RuleViolation.Builder> violations) throws Exception
+	{
 		Node definition = DouiManagerFactory.getDouiManager().getDouiServiceDefinitionNode(origin.getServiceId(), transaction);
 		String serviceType = ManagerFactory.getServiceManager().get(session, origin.getServiceId(), transaction).getServiceType();
 		boolean isContentService = SERVICE_TYPE_CONTENT.equals(serviceType);
@@ -177,7 +255,7 @@ public final class DependencyRules
 			if (isContentService && isTableSource)
 			{
 				violations.add(
-						new RuleViolation(
+						RuleViolation.builder(
 								RULE_TABLE_SOURCE,
 								sourceId,
 								"The source " + sourceId + " is of type table, which is not migrated in a " + SERVICE_TYPE_CONTENT + " service."));
@@ -185,7 +263,7 @@ public final class DependencyRules
 			for (Node fieldNode : XmlUtil.selectNodes("fields/field[@dataType='files']", sourceNode))
 			{
 				String fieldId = sourceId + "." + XmlUtil.readAttributeString("id", fieldNode);
-				violations.add(new RuleViolation(RULE_FILES_FIELD, fieldId, "The field " + fieldId + " is of type files, which is not migrated."));
+				violations.add(RuleViolation.builder(RULE_FILES_FIELD, fieldId, "The field " + fieldId + " is of type files, which is not migrated."));
 			}
 		}
 	}
@@ -193,11 +271,51 @@ public final class DependencyRules
 	/**
 	 * Returns the id of the repository instance of the given dependency type linked to the service
 	 * instance, or {@code null} when none is configured.
+	 *
+	 * @since %LUM_NEXT_VERSION%
 	 */
 	public static String repository(SessionConfig session, String serviceInstanceId, String dependencyType, ITransaction transaction) throws Exception
 	{
-		ServiceInstanceConfig repository = ManagerFactory.getServiceInstanceManager()
-				.getServiceInstanceByDependency(session, serviceInstanceId, dependencyType, transaction);
+		ServiceInstanceConfig repository = repositoryConfig(session, serviceInstanceId, dependencyType, transaction);
 		return repository == null ? null : repository.getId();
+	}
+
+	/**
+	 * Finds the configured repository without discarding its name and channel.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private static ServiceInstanceConfig repositoryConfig(SessionConfig session, String serviceInstanceId, String dependencyType, ITransaction transaction)
+			throws PortalException
+	{
+		return ManagerFactory.getServiceInstanceManager().getServiceInstanceByDependency(session, serviceInstanceId, dependencyType, transaction);
+	}
+
+	/**
+	 * Captures instance details, keeping the name available when the channel path cannot be read.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private static InstanceReference instanceReference(SessionConfig session, ServiceInstanceConfig instance, ITransaction transaction)
+	{
+		if (instance == null)
+		{
+			return null;
+		}
+
+		String path = null;
+		try
+		{
+			List<String> names = ManagerFactory.getChannelManager().getPathNames(session, instance.getChannelId(), false, transaction);
+			if (!names.isEmpty())
+			{
+				path = String.join(" / ", names);
+			}
+		}
+		catch (PortalException exception)
+		{
+			// The optional path should not prevent the validation from reporting the violation.
+		}
+		return new InstanceReference(instance.getId(), instance.getName(), path);
 	}
 }

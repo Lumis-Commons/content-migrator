@@ -18,6 +18,7 @@ import lumis.portal.PortalObjectNotFoundException;
 import lumis.portal.channel.ChannelConfig;
 import lumis.portal.manager.ManagerFactory;
 import lumis.portal.serviceinstance.ServiceInstanceConfig;
+import lumis.portal.serviceinstance.ServiceInstanceDependencyConfig;
 import lumis.portal.user.UserConfig;
 
 /** Persistent, opt-in fixture shared by the HTTP browser and a later cleanup JVM. */
@@ -75,6 +76,7 @@ public class UiScenarioTest
 		// Selecting the child without its root produces a real missing-parent warning.
 		ModuleBridge.api("start", java.util.Map.of("migrationId", ids.getString("migrationId"), "userId", UserConfig.USER_ADMINISTRATOR_ID));
 		org.junit.Assert.assertEquals("FINISHED", ((java.util.Map<?, ?>) ModuleBridge.api("awaitTermination", ids.getString("migrationId"), "120000")).get("status"));
+		createViolationPair(fixture, channel, ids);
 		String login = "contentmigrator-test-ui-" + UUID.randomUUID().toString().substring(0, 12);
 		String password = "contentmigrator#9" + UUID.randomUUID() + "Q!";
 		UserConfig user = new UserConfig();
@@ -86,6 +88,54 @@ public class UiScenarioTest
 		ids.put("userId", userId).put("userLogin", login).put("userPassword", password);
 		save(ids);
 		System.out.println("PROGRESS UI scenario ready: target/ui-ids.json (private)");
+	}
+
+	/**
+	 * Creates an origin and destination pair that breaks two creation rules at once: the origin uses a
+	 * media repository the destination lacks and the two use different e-mail template repositories.
+	 * Instance names carry accents and an ampersand to prove the displayed text is escaped and decoded.
+	 *
+	 * @param fixture
+	 *            the fixture that owns the created portal objects.
+	 * @param channel
+	 *            the channel that receives the instances.
+	 * @param ids
+	 *            the persisted ids, completed with the pair, its selection and its displayed names.
+	 * @throws Exception
+	 *             if any portal object cannot be created.
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private static void createViolationPair(PortalFixture fixture, ChannelConfig channel, JSONObject ids) throws Exception
+	{
+		ServiceInstanceConfig media = addInstance(fixture, channel, PortalFixture.MEDIA_SERVICE_ID, ids, "violationMediaId");
+		ServiceInstanceConfig originEmail = addInstance(fixture, channel, "lumis.service.emailtemplaterepository", ids, "violationOriginEmailId");
+		ServiceInstanceConfig destinationEmail = addInstance(fixture, channel, "lumis.service.emailtemplaterepository", ids, "violationDestinationEmailId");
+		ServiceInstanceConfig origin = addInstance(fixture, channel, PortalFixture.HIERARCHICAL_SERVICE_ID, ids, "violationOriginId");
+		ServiceInstanceConfig destination = addInstance(fixture, channel, PortalFixture.HIERARCHICAL_SERVICE_ID, ids, "violationDestinationId");
+		String originName = "contentmigrator-test-ui-Origem Ação & Cia";
+		String destinationName = "contentmigrator-test-ui-Destino Área & Cia";
+		PortalFixture.inTransaction((session, transaction) ->
+		{
+			origin.setName(originName);
+			ManagerFactory.getServiceInstanceManager().update(session, origin, transaction);
+			destination.setName(destinationName);
+			ManagerFactory.getServiceInstanceManager().update(session, destination, transaction);
+			return null;
+		});
+		ids.put("violationOriginName", originName).put("violationDestinationName", destinationName);
+		fixture.setDependency(media, origin, ServiceInstanceDependencyConfig.DEPENDENCY_TYPE_MEDIA_REPOSITORY);
+		PortalFixture.inTransaction((session, transaction) ->
+		{
+			ServiceInstanceDependencyConfig removal = new ServiceInstanceDependencyConfig();
+			removal.setDependentServiceInstanceId(destination.getId());
+			removal.setDependencyType(ServiceInstanceDependencyConfig.DEPENDENCY_TYPE_MEDIA_REPOSITORY);
+			ManagerFactory.getServiceInstanceManager().setServiceInstanceDependency(removal, transaction);
+			return null;
+		});
+		fixture.setDependency(originEmail, origin, ServiceInstanceDependencyConfig.DEPENDENCY_TYPE_EMAIL_TEMPLATE_REPOSITORY);
+		fixture.setDependency(destinationEmail, destination, ServiceInstanceDependencyConfig.DEPENDENCY_TYPE_EMAIL_TEMPLATE_REPOSITORY);
+		ids.put("violationRootId", fixture.addHierarchicalContent(origin, "ui-violation-root", null, true));
+		save(ids);
 	}
 
 	private static ServiceInstanceConfig addInstance(PortalFixture fixture, ChannelConfig channel, String service,

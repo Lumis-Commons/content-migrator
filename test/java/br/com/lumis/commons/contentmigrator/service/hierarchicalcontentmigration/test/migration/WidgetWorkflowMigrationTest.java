@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -111,6 +112,11 @@ public class WidgetWorkflowMigrationTest
 		cleanup.assertNoFailures();
 	}
 
+	/**
+	 * Verifies that separate repositories require an explicit widget mapping before any items are copied.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
 	@Test
 	public void blocksWithoutMappingThenResumesAndRewritesEveryEmbed() throws Exception
 	{
@@ -122,6 +128,7 @@ public class WidgetWorkflowMigrationTest
 		assertEquals("WIDGET_MAPPING_REQUIRED", blocked.get("errorType"));
 		assertTrue("the blocked item belongs to the selected hierarchy", originHtmlByItem.containsKey(blocked.get("blockingOriginItemId")));
 		assertEquals(originWidget, blocked.get("blockingWidgetContentId"));
+		assertNull("the precheck did not save a widget mapping", savedMapping());
 		assertEquals("the precheck did not create destination news", 0, contentCount(destinationContent.getId()));
 		assertEquals("the precheck did not leave destination widget instances", 0, instanceIdsOf(destinationWidget).size());
 		assertOriginUnchanged(originalInstances);
@@ -223,6 +230,9 @@ public class WidgetWorkflowMigrationTest
 	 * With a shared repository the handler keeps the embeds and {@code HtmlDataType#preAdd} clones
 	 * their instances natively; the embed of an instance removed after the content was saved, which
 	 * the native hook would reject, is removed with a warning, as with different repositories.
+	 * The migration finishes without a mapping and keeps the same widget contents in the repository.
+	 *
+	 * @since %LUM_NEXT_VERSION%
 	 */
 	@Test
 	public void removesOrphanEmbedsAndKeepsTheOthersWhenTheRepositoryIsShared() throws Exception
@@ -249,6 +259,8 @@ public class WidgetWorkflowMigrationTest
 
 		Map<String, Object> run = runMigration();
 		assertEquals("Migration error: " + run.get("errorMessage"), "FINISHED", run.get("status"));
+		assertNull("the shared repository migration did not require a widget mapping", run.get("errorType"));
+		assertNull("the shared repository migration did not save a widget mapping", savedMapping());
 		String destinationItemId = destinationItemsByOrigin().get(originItemId);
 		assertNotNull("the content was copied", destinationItemId);
 		widgets.track(destinationContent.getId(), SOURCE_ID, destinationItemId);
@@ -269,6 +281,8 @@ public class WidgetWorkflowMigrationTest
 		});
 		assertEquals("the origin is unchanged", sourceHtml, readHtml(originItemId));
 		assertTrue("the removal is a warning of the item", contentWarnings(originItemId).contains("HTML widget instance " + orphan.getId() + " no longer exists"));
+		assertEquals("the shared repository still contains only the original widget", Set.of(originWidget),
+				PortalFixture.inTransaction((session, transaction) -> WidgetFixture.listWidgets(originRepository.getId()).keySet()));
 	}
 
 	@Test

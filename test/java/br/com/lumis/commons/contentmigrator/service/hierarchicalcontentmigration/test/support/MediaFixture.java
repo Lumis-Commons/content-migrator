@@ -62,6 +62,18 @@ public class MediaFixture
 		return contentId;
 	}
 
+	/**
+	 * Sets the image on existing hierarchical content alongside its other references.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	public static void setHierarchicalImage(ServiceInstanceConfig instance, String contentId, String mediaId) throws Exception
+	{
+		Map<String, Object> data = new HashMap<>();
+		data.put("image", mediaId);
+		updateHierarchicalContent(instance, contentId, data);
+	}
+
 	/** Updates the active hierarchical item through its native source, retaining fixture cleanup. */
 	static void updateHierarchicalContent(ServiceInstanceConfig instance, String contentId, Map<String, Object> data) throws Exception
 	{

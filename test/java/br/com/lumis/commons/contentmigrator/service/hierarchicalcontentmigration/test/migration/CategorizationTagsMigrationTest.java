@@ -3,6 +3,7 @@ package br.com.lumis.commons.contentmigrator.service.hierarchicalcontentmigratio
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.sql.PreparedStatement;
@@ -186,15 +187,60 @@ public class CategorizationTagsMigrationTest
 		assertTrue(result(content, "warnings").contains("Categorization term " + term));
 	}
 
+	/**
+	 * Verifies that a shared repository keeps both term associations without creating terms or mappings.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
 	@Test
 	public void sharedRepositoryPreservesTermsWithoutMaps() throws Exception
 	{
 		createRepositories(true);
-		String term = terms.addTerm(originRepository, null, "Shared");
-		String content = terms.addHierarchicalContent(portal, origin, "shared", null, term);
-		migrate(content);
-		assertEquals(term, onlyTerm(result(content, "destContentId"), ContentMetadataFixture.LOCALE, false));
-		assertEquals("0", termMapCount());
+		String rootTerm = terms.addTerm(originRepository, null, "Shared root");
+		String childTerm = terms.addTerm(originRepository, rootTerm, "Shared child");
+		String parent = terms.addHierarchicalContent(portal, origin, "parent", null, rootTerm);
+		String child = terms.addHierarchicalContent(portal, origin, "child", parent, childTerm);
+		String before = repositoryContentCount(originRepository);
+
+		migrate(parent);
+
+		assertEquals(rootTerm, onlyTerm(result(parent, "destContentId"), ContentMetadataFixture.LOCALE, false));
+		assertEquals(childTerm, onlyTerm(result(child, "destContentId"), ContentMetadataFixture.LOCALE, false));
+		assertEquals("shared repository content count", before, repositoryContentCount(originRepository));
+		assertEquals("term mappings involving the shared repository", "0",
+				value("select count(*) from lum_cmig_HMigItemMap where kind = 'TERM' and (originServiceInstanceId = ? or destServiceInstanceId = ?)",
+						originRepository.getId(), originRepository.getId()));
+	}
+
+	/**
+	 * Verifies that resolving a child term creates its parent in an empty destination repository
+	 * and that both mapped terms are used in the destination associations.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	@Test
+	public void differentRepositoriesCloneRootAndChildTermsByPath() throws Exception
+	{
+		createRepositories(false);
+		String rootTerm = terms.addTerm(originRepository, null, "Root");
+		String childTerm = terms.addTerm(originRepository, rootTerm, "Child");
+		String parent = terms.addHierarchicalContent(portal, origin, "parent", null, childTerm);
+		String child = terms.addHierarchicalContent(portal, origin, "child", parent, rootTerm);
+
+		migrate(parent);
+
+		String destRootTerm = onlyTerm(result(child, "destContentId"), ContentMetadataFixture.LOCALE, false);
+		String destChildTerm = onlyTerm(result(parent, "destContentId"), ContentMetadataFixture.LOCALE, false);
+		assertNotEquals(rootTerm, destRootTerm);
+		assertNotEquals(childTerm, destChildTerm);
+		assertEquals(destRootTerm, mapped(rootTerm, "destItemId"));
+		assertEquals(destChildTerm, mapped(childTerm, "destItemId"));
+		assertEquals("1", mapped(rootTerm, "destCreated"));
+		assertEquals("1", mapped(childTerm, "destCreated"));
+		assertEquals(List.of("Root"), CategorizationFixture.path(destRootTerm));
+		assertEquals(List.of("Root", "Child"), CategorizationFixture.path(destChildTerm));
+		assertEquals("2", repositoryContentCount(destinationRepository));
+		assertEquals("2", termMapCount());
 	}
 
 	@Test
@@ -287,18 +333,83 @@ public class CategorizationTagsMigrationTest
 		return id;
 	}
 
+	/**
+	 * Verifies that separate repositories copy tags by name without recording item mappings.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
 	@Test
 	public void tagsAreCreatedByNameAcrossTheHierarchy() throws Exception
 	{
 		assertTags(false);
 	}
 
+	/**
+	 * Verifies that rerunning a migration keeps the destination's preexisting tag and creates no item mappings.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
 	@Test
 	public void tagsReuseExistingDestinationTermsAndRemainStableOnRerun() throws Exception
 	{
 		assertTags(true);
 	}
 
+	/**
+	 * Verifies that a migration with a shared tag repository uses the origin term across the hierarchy
+	 * without creating a tag term or recording an item mapping.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	@Test
+	public void sharedTagRepositoryReusesTheOriginTermWithoutMaps() throws Exception
+	{
+		ServiceInstanceConfig repository = portal.createServiceInstance(channel, "lumis.service.tag");
+		portal.setDependency(repository, origin, TAG_REPOSITORY);
+		portal.setDependency(repository, destination, TAG_REPOSITORY);
+		String parent = portal.addHierarchicalContent(origin, "tag parent", null, true);
+		String child = portal.addHierarchicalContent(origin, "tag child", parent, true);
+		String originTag = addTag(parent);
+		assertEquals(originTag, addTag(child));
+		String before = repositoryContentCount(repository);
+
+		migrate(parent);
+
+		assertEquals(originTag, onlyTag(result(parent, "destContentId"), repository.getId()));
+		assertEquals(originTag, onlyTag(result(child, "destContentId"), repository.getId()));
+		assertEquals(before, repositoryContentCount(repository));
+		assertNoTagItemMaps(repository, repository);
+	}
+
+	/**
+	 * Verifies that the tag repository requirement is reported and prevents migration creation.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	@Test
+	public void destinationWithoutTagRepositoryRejectsMigrationCreation() throws Exception
+	{
+		ServiceInstanceConfig repository = portal.createServiceInstance(channel, "lumis.service.tag");
+		portal.setDependency(repository, origin, TAG_REPOSITORY);
+		String content = portal.addHierarchicalContent(origin, "tagged content", null, true);
+		addTag(content);
+
+		List<?> violations = PortalFixture.inTransaction((session, transaction) -> (List<?>) ModuleBridge.invokeStatic(
+				"br.com.lumis.commons.contentmigrator.service.hierarchicalcontentmigration.validation.DependencyRules",
+				"validate", session, origin.getId(), destination.getId(), transaction));
+		assertEquals(violations.toString(), 1, violations.size());
+		Object violation = violations.get(0);
+		assertEquals("REPOSITORY_REQUIRED", violation.getClass().getMethod("getRule").invoke(violation));
+		assertEquals(TAG_REPOSITORY, violation.getClass().getMethod("getSubject").invoke(violation));
+		RuntimeException rejection = assertThrows(RuntimeException.class, () -> createMigration(content));
+		assertEquals("RULES_VIOLATED", ModuleBridge.errorCode(rejection));
+	}
+
+	/**
+	 * Verifies tag associations and item mapping counts across an initial run and a rerun with separate repositories.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
 	private void assertTags(boolean existing) throws Exception
 	{
 		ServiceInstanceConfig originTags = portal.createServiceInstance(channel, "lumis.service.tag");
@@ -321,11 +432,25 @@ public class CategorizationTagsMigrationTest
 			assertEquals(existingTag, destTag);
 		}
 		assertEquals("1", repositoryContentCount(destinationTags));
+		assertNoTagItemMaps(originTags, destinationTags);
 		run();
 		assertEquals(destParent, result(parent, "destContentId"));
 		assertEquals(destTag, onlyTag(destParent, destinationTags.getId()));
 		assertEquals(destTag, onlyTag(destChild, destinationTags.getId()));
 		assertEquals("1", repositoryContentCount(destinationTags));
+		assertNoTagItemMaps(originTags, destinationTags);
+	}
+
+	/**
+	 * Checks for item mappings associated with either tag repository, regardless of mapping kind.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private static void assertNoTagItemMaps(ServiceInstanceConfig originTags, ServiceInstanceConfig destinationTags) throws Exception
+	{
+		assertEquals("item mappings involving tag repositories", "0", value("select count(*) from lum_cmig_HMigItemMap "
+				+ "where originServiceInstanceId in (?, ?) or destServiceInstanceId in (?, ?)",
+				originTags.getId(), destinationTags.getId(), originTags.getId(), destinationTags.getId()));
 	}
 
 	private static String addTag(String content) throws Exception
@@ -426,7 +551,23 @@ public class CategorizationTagsMigrationTest
 		});
 	}
 
+	/**
+	 * Creates and starts a migration for the selected content.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
 	private void migrate(String selection) throws Exception
+	{
+		createMigration(selection);
+		run();
+	}
+
+	/**
+	 * Creates a migration for the selected content and retains its ID for cleanup.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private void createMigration(String selection) throws Exception
 	{
 		Map<String, Object> params = new HashMap<>();
 		params.put("name", "hierarchical categorization and tags");
@@ -435,7 +576,6 @@ public class CategorizationTagsMigrationTest
 		params.put("selectedContentIds", selection);
 		params.put("updateMode", "UPDATE");
 		migrationId = (String) map(ModuleBridge.api("create", params)).get("id");
-		run();
 	}
 
 	private void run() throws Exception

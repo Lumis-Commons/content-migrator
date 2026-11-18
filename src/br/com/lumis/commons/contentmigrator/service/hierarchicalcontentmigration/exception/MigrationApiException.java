@@ -1,5 +1,9 @@
 package br.com.lumis.commons.contentmigrator.service.hierarchicalcontentmigration.exception;
 
+import java.util.List;
+
+import br.com.lumis.commons.contentmigrator.service.hierarchicalcontentmigration.dto.RuleViolation;
+
 /** Validation failure of the {@code MigrationApi}; {@link #getCode()} is one of the {@code ERROR_*} constants. */
 public class MigrationApiException extends RuntimeException
 {
@@ -43,11 +47,45 @@ public class MigrationApiException extends RuntimeException
 
 	private final String code;
 
-	/** Creates an API validation exception with an error code and diagnostic message. */
+	/**
+	 * Ordered rule violations, empty for other validation failures.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private final List<RuleViolation> violations;
+
+	/**
+	 * Creates an API validation exception with an error code and diagnostic message.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
 	public MigrationApiException(String code, String message)
 	{
 		super(code + ": " + message);
 		this.code = code;
+		this.violations = List.of();
+	}
+
+	/**
+	 * Wraps a creation rule failure with its diagnostic and immutable list of violations.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	public MigrationApiException(RulesViolatedException cause)
+	{
+		super(ERROR_RULES_VIOLATED + ": " + cause.getMessage(), cause);
+		this.code = ERROR_RULES_VIOLATED;
+		this.violations = List.copyOf(cause.getViolations());
+	}
+
+	/**
+	 * Returns the ordered list of broken creation rules.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	public List<RuleViolation> getViolations()
+	{
+		return violations;
 	}
 
 	/** Returns the machine-readable {@code ERROR_*} code of this validation failure. */

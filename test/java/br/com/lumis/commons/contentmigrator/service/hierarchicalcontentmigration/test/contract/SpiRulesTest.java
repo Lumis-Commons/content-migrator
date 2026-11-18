@@ -5,6 +5,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -26,7 +27,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.junit.After;
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -49,6 +49,9 @@ import lumis.portal.privacyterm.IPrivacyTermManagerSPI;
 import lumis.portal.serviceinstance.ServiceInstanceConfig;
 import lumis.portal.serviceinstance.ServiceInstanceDependencyConfig;
 import lumis.portal.transaction.ITransaction;
+import lumis.portal.user.UserConfig;
+import lumis.service.emailtemplaterepository.EmailTemplateManagerFactory;
+import lumis.service.emailtemplaterepository.IEmailTemplate;
 
 /**
  * Proves the PAT002 SPI pieces that do not depend on a concrete handler: the creation rules of
@@ -97,6 +100,20 @@ public class SpiRulesTest
 
 	private static final String CATEGORIZATION = ServiceInstanceDependencyConfig.DEPENDENCY_TYPE_CATEGORIZATION_REPOSITORY;
 
+	/**
+	 * Dependency type used by the native e-mail template repository.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private static final String EMAIL_TEMPLATE = ServiceInstanceDependencyConfig.DEPENDENCY_TYPE_EMAIL_TEMPLATE_REPOSITORY;
+
+	/**
+	 * Dependency type used by the native privacy term repository.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private static final String PRIVACY_TERM = IPrivacyTermManagerSPI.DEPENDENCY_TYPE_PRIVACYTERM_REPOSITORY;
+
 	/** A rule broken, read from a module Violation. */
 	private static class Violation
 	{
@@ -106,8 +123,21 @@ public class SpiRulesTest
 
 		final String message;
 
+		/**
+		 * Structured violation loaded by the module class loader.
+		 *
+		 * @since %LUM_NEXT_VERSION%
+		 */
+		final Object details;
+
+		/**
+		 * Reads the existing diagnostic and retains the structured violation for contract checks.
+		 *
+		 * @since %LUM_NEXT_VERSION%
+		 */
 		Violation(Object violation) throws Exception
 		{
+			details = violation;
 			rule = (String) violation.getClass().getMethod("getRule").invoke(violation);
 			subject = (String) violation.getClass().getMethod("getSubject").invoke(violation);
 			message = (String) violation.getClass().getMethod("getMessage").invoke(violation);
@@ -126,6 +156,13 @@ public class SpiRulesTest
 
 	private final List<String[]> posts = new ArrayList<>();
 
+	/**
+	 * Migration of hierarchical content sharing a repository.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private String sharedRepositoryMigrationId;
+
 	@Before
 	public void setUp() throws Exception
 	{
@@ -133,12 +170,33 @@ public class SpiRulesTest
 		channel = fixture.createChannel();
 	}
 
+	/**
+	 * Removes the shared-repository migration and releases the test fixtures.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
 	@After
 	public void tearDown()
 	{
 		TestCleanup cleanup = new TestCleanup();
 		if (!PortalFixture.keepTestData())
 		{
+			if (sharedRepositoryMigrationId != null)
+			{
+				try
+				{
+					ModuleBridge.api("stop", sharedRepositoryMigrationId);
+					ModuleBridge.api("awaitTermination", sharedRepositoryMigrationId, "120000");
+					ModuleBridge.api("undo", sharedRepositoryRunParams());
+					Map<?, ?> undone = (Map<?, ?>) ModuleBridge.api("awaitTermination", sharedRepositoryMigrationId, "120000");
+					assertEquals(undone.toString(), "FINISHED", undone.get("status"));
+					ModuleBridge.api("delete", sharedRepositoryMigrationId);
+				}
+				catch (Exception | AssertionError e)
+				{
+					cleanup.recordFailure("could not remove shared-repository migration " + sharedRepositoryMigrationId, e);
+				}
+			}
 			// through the source, so the file fields remove their lum_File and stored files
 			Collections.reverse(posts);
 			for (String[] post : posts)
@@ -162,6 +220,11 @@ public class SpiRulesTest
 		cleanup.assertNoFailures();
 	}
 
+	/**
+	 * Checks diagnostics and structured instance references for each absent required repository.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
 	@Test
 	public void destinationWithoutRequiredRepositoryIsRejected() throws Exception
 	{
@@ -179,6 +242,11 @@ public class SpiRulesTest
 		{
 			Violation violation = find(violations, RULE_REPOSITORY_REQUIRED, type);
 			assertTrue(violation.message, violation.message.contains(type));
+			assertEquals(type, violation.details.getClass().getMethod("getDependencyType").invoke(violation.details));
+			assertInstanceReference(violation, "getOrigin", origin);
+			assertInstanceReference(violation, "getDestination", dest);
+			assertInstanceReference(violation, "getOriginRepository", repository);
+			assertNull(violation.details.getClass().getMethod("getDestinationRepository").invoke(violation.details));
 		}
 		assertEquals(violations.toString(), requiredTypes().size(), count(violations, RULE_REPOSITORY_REQUIRED));
 
@@ -191,6 +259,25 @@ public class SpiRulesTest
 		assertEquals(Collections.emptyList(), messages(validate(origin, dest)));
 	}
 
+	/**
+	 * Verifies an instance reference against the fixture and the channel path.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private void assertInstanceReference(Violation violation, String getter, ServiceInstanceConfig instance) throws Exception
+	{
+		Object reference = violation.details.getClass().getMethod(getter).invoke(violation.details);
+		assertEquals(instance.getId(), reference.getClass().getMethod("id").invoke(reference));
+		assertEquals(instance.getName(), reference.getClass().getMethod("name").invoke(reference));
+		String path = (String) reference.getClass().getMethod("channelPath").invoke(reference);
+		assertTrue(path, path.endsWith(" / " + channel.getName()));
+	}
+
+	/**
+	 * Rejects different or absent destination repositories for the shared dependency types.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
 	@Test
 	public void notSharedRepositoryIsRejected() throws Exception
 	{
@@ -205,12 +292,14 @@ public class SpiRulesTest
 		}
 
 		List<Violation> violations = validate(origin, dest);
-		String[] sharedTypes = {ServiceInstanceDependencyConfig.DEPENDENCY_TYPE_EMAIL_TEMPLATE_REPOSITORY,
-				IPrivacyTermManagerSPI.DEPENDENCY_TYPE_PRIVACYTERM_REPOSITORY};
+		String[] sharedTypes = {EMAIL_TEMPLATE, PRIVACY_TERM};
 		for (String type : sharedTypes)
 		{
 			Violation violation = find(violations, RULE_REPOSITORY_NOT_SHARED, type);
 			assertTrue(violation.message, violation.message.contains(type));
+			assertEquals(type, violation.details.getClass().getMethod("getDependencyType").invoke(violation.details));
+			assertInstanceReference(violation, "getOriginRepository", repository);
+			assertInstanceReference(violation, "getDestinationRepository", otherRepository);
 		}
 
 		for (String type : sharedTypes())
@@ -218,6 +307,165 @@ public class SpiRulesTest
 			fixture.setDependency(repository, dest, type);
 		}
 		assertEquals(0, count(validate(origin, dest), RULE_REPOSITORY_NOT_SHARED));
+
+		for (String type : sharedTypes)
+		{
+			removeDependency(dest, type);
+			violations = validate(origin, dest);
+			find(violations, RULE_REPOSITORY_NOT_SHARED, type);
+			assertEquals(violations.toString(), 1, count(violations, RULE_REPOSITORY_NOT_SHARED));
+			fixture.setDependency(repository, dest, type);
+		}
+	}
+
+	/**
+	 * Migrates published content while preserving the template IDs in the shared native repository
+	 * and leaving that repository out of both mapping tables.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	@Test
+	public void sharedEmailTemplateRepositoryIsReusedDuringMigration() throws Exception
+	{
+		ServiceInstanceConfig repository = fixture.createServiceInstance(channel, "lumis.service.emailtemplaterepository");
+		ServiceInstanceConfig origin = fixture.createServiceInstance(channel, PortalFixture.HIERARCHICAL_SERVICE_ID);
+		ServiceInstanceConfig dest = fixture.createServiceInstance(channel, PortalFixture.HIERARCHICAL_SERVICE_ID);
+		fixture.setDependency(repository, origin, EMAIL_TEMPLATE);
+		fixture.setDependency(repository, dest, EMAIL_TEMPLATE);
+
+		String templateId = PortalFixture.inTransaction((session, transaction) ->
+		{
+			session.setLocale(MediaFixture.LOCALE);
+			ContentTableSource source = (ContentTableSource) SourceFactory.createSource("emailTemplate", new SourceContext(session, repository, transaction));
+			return source.addData(Map.of("title", "Migration template", "subjectTemplate", "Test subject", "bodyTemplate", "<p>Test body</p>")).getItemId();
+		});
+		List<String> originalTemplateIds = emailTemplateIds(repository.getId());
+		assertEquals(List.of(templateId), originalTemplateIds);
+
+		migrateWithSharedRepository(origin, dest, repository, EMAIL_TEMPLATE);
+
+		assertEquals(originalTemplateIds, emailTemplateIds(repository.getId()));
+	}
+
+	/**
+	 * Migrates published content while preserving the shared privacy term's item IDs and count.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	@Test
+	public void sharedPrivacyTermRepositoryIsReusedDuringMigration() throws Exception
+	{
+		ServiceInstanceConfig repository = fixture.createServiceInstance(channel, "lumis.service.privacyterm");
+		ServiceInstanceConfig origin = fixture.createServiceInstance(channel, PortalFixture.HIERARCHICAL_SERVICE_ID);
+		ServiceInstanceConfig dest = fixture.createServiceInstance(channel, PortalFixture.HIERARCHICAL_SERVICE_ID);
+		fixture.setDependency(repository, origin, PRIVACY_TERM);
+		fixture.setDependency(repository, dest, PRIVACY_TERM);
+
+		String termId = PortalFixture.inTransaction((session, transaction) ->
+		{
+			session.setLocale(MediaFixture.LOCALE);
+			ContentTableSource source = (ContentTableSource) SourceFactory.createSource("privacyTerm", new SourceContext(session, repository, transaction));
+			return source.addData(Map.of(
+					"title", "Migration privacy term",
+					"termSummary", "<p>Test summary</p>",
+					"termText", "<p>Test term</p>",
+					ContentTableSource.TRANSITION_PARAMETER_NAME, "authoring.approve")).getItemId();
+		});
+		List<String> originalTermIds = privacyTermIds(repository.getId());
+		assertEquals(List.of(termId), originalTermIds);
+
+		migrateWithSharedRepository(origin, dest, repository, PRIVACY_TERM);
+
+		assertEquals(originalTermIds, privacyTermIds(repository.getId()));
+	}
+
+	/**
+	 * Checks that a shared dependency has no handler and migrates one item without mapping the repository.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private void migrateWithSharedRepository(ServiceInstanceConfig origin, ServiceInstanceConfig dest, ServiceInstanceConfig repository,
+			String dependencyType) throws Exception
+	{
+		assertNull(ModuleBridge.invokeStatic(REGISTRY, "getHandler", dependencyType));
+		String name = "Shared repository " + dependencyType;
+		String contentId = fixture.addHierarchicalContent(origin, name, null, true);
+		PortalFixture.awaitGlobalLockFree();
+		Map<?, ?> created = (Map<?, ?>) ModuleBridge.api(
+				"create",
+				Map.of(
+						"name", name,
+						"originServiceInstanceId", origin.getId(),
+						"destServiceInstanceId", dest.getId(),
+						"selectedContentIds", contentId));
+		sharedRepositoryMigrationId = (String) created.get("id");
+		assertNotNull(sharedRepositoryMigrationId);
+		ModuleBridge.api("start", sharedRepositoryRunParams());
+		Map<?, ?> finished = (Map<?, ?>) ModuleBridge.api("awaitTermination", sharedRepositoryMigrationId, "120000");
+		assertEquals("Migration error: " + finished.get("errorMessage"), "FINISHED", finished.get("status"));
+		assertEquals("1", finished.get("migratedCount"));
+
+		assertNoRepositoryMapping(
+				"select count(*) from lum_cmig_HMigRepoMap where originRepoInstanceId = ? or destRepoInstanceId = ?", repository.getId());
+		assertNoRepositoryMapping(
+				"select count(*) from lum_cmig_HMigItemMap where originServiceInstanceId = ? or destServiceInstanceId = ?", repository.getId());
+	}
+
+	/**
+	 * Lists all stored privacy term item IDs, including versions, to detect additions or removals.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private static List<String> privacyTermIds(String repositoryId) throws Exception
+	{
+		String query = "select v.itemId from ContentVersion v join v.contentLocale.content c "
+				+ "where c.serviceInstanceId = :repositoryId and c.sourceId = 'privacyTerm' order by v.itemId";
+		return PortalFixture.inTransaction((session, transaction) -> ManagerFactory.getEntityManager()
+				.createQuery(query, String.class).setParameter("repositoryId", repositoryId).getResultList());
+	}
+
+	/**
+	 * Lists every stored template item ID in the repository, retaining the count of items.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private static List<String> emailTemplateIds(String repositoryId) throws Exception
+	{
+		return PortalFixture.inTransaction((session, transaction) -> EmailTemplateManagerFactory.getInstance().getByServiceInstance(repositoryId)
+				.stream().map(IEmailTemplate::getId).sorted().collect(Collectors.toList()));
+	}
+
+	/**
+	 * Checks that neither side of a mapping row cites the shared repository.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private static void assertNoRepositoryMapping(String sql, String repositoryId) throws Exception
+	{
+		long count = PortalFixture.inTransaction((session, transaction) ->
+		{
+			try (PreparedStatement statement = ((ITransactionJdbc) transaction).getConnection().prepareStatement(sql))
+			{
+				statement.setString(1, repositoryId);
+				statement.setString(2, repositoryId);
+				try (ResultSet rows = statement.executeQuery())
+				{
+					assertTrue(rows.next());
+					return rows.getLong(1);
+				}
+			}
+		});
+		assertEquals(sql, 0, count);
+	}
+
+	/**
+	 * Supplies the migration ID and administrator for the background migration and undo.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private Map<String, Object> sharedRepositoryRunParams()
+	{
+		return Map.of("migrationId", sharedRepositoryMigrationId, "userId", UserConfig.USER_ADMINISTRATOR_ID);
 	}
 
 	@Test
@@ -225,18 +473,22 @@ public class SpiRulesTest
 	{
 		ServiceInstanceConfig origin = news();
 		ServiceInstanceConfig dest = news();
-		// a workflow other than the one the destination may have received when it was created
+		// an installed workflow on the origin and none on the destination, which has no content yet
 		WorkflowConfig workflow = PortalFixture.inTransaction((session, transaction) ->
 		{
-			WorkflowConfig destWorkflow = ContentManagerFactory.getWorkflowManager().getServiceInstanceWorkflow(session, dest.getId(), transaction);
 			Collection<WorkflowConfig> workflows = ContentManagerFactory.getWorkflowManager().getAllWorkflows(session, transaction);
-			return workflows.stream().filter(w -> destWorkflow == null || !w.getId().equals(destWorkflow.getId())).findFirst().orElse(null);
+			return workflows.stream().findFirst().orElse(null);
 		});
-		Assume.assumeNotNull(workflow);
+		assertNotNull("an installed workflow is required", workflow);
 		setWorkflow(origin, workflow.getId());
+		setWorkflow(dest, null);
 
 		Violation violation = find(validate(origin, dest), RULE_DIFFERENT_WORKFLOW, null);
 		assertTrue(violation.message, violation.message.contains(workflow.getId()));
+		Object originWorkflow = violation.details.getClass().getMethod("getOriginWorkflow").invoke(violation.details);
+		assertNotNull(violation.message, originWorkflow);
+		assertEquals(workflow.getId(), originWorkflow.getClass().getMethod("id").invoke(originWorkflow));
+		assertNull(violation.details.getClass().getMethod("getDestinationWorkflow").invoke(violation.details));
 
 		setWorkflow(dest, workflow.getId());
 		assertEquals(0, count(validate(origin, dest), RULE_DIFFERENT_WORKFLOW));

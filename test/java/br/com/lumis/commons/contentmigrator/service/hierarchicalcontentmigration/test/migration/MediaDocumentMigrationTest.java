@@ -87,6 +87,12 @@ public class MediaDocumentMigrationTest
 		}
 	}
 
+	/**
+	 * Verifies that distinct media repositories produce one mapped image clone and two folders,
+	 * with the clone reused by the hierarchy and on rerun.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
 	@Test
 	public void sharedImageAndHtmlUseOneCloneAcrossTheHierarchyAndOnRerun() throws Exception
 	{
@@ -95,6 +101,7 @@ public class MediaDocumentMigrationTest
 		String child = addContent("child", parent, repositoryItem);
 		migrate(parent);
 		String clone = assertClone();
+		assertEquals("two folders and one image in the destination repository", "3", repositoryItemCount());
 		assertReferences(parent, clone, true);
 		assertReferences(child, clone, true);
 		assertEquals(result(parent, "destContentId"), result(child, "parentContentId"));
@@ -154,14 +161,24 @@ public class MediaDocumentMigrationTest
 		assertReferences(content, assertClone(), true);
 	}
 
+	/**
+	 * Verifies that a shared media repository keeps the image and HTML references, its item
+	 * count, and the absence of item mappings involving that repository.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
 	@Test
 	public void sameMediaRepositoryKeepsImageAndHtmlWithoutClones() throws Exception
 	{
 		createRepositories(false, true);
 		String content = addContent("same repository", null, repositoryItem);
+		String beforeCount = repositoryItemCount();
 		migrate(content);
 		assertReferences(content, repositoryItem, true);
-		assertEquals("0", repositoryMapCount());
+		assertEquals("shared repository item count", beforeCount, repositoryItemCount());
+		assertEquals("item mappings involving the shared repository", "0", value(
+				"select count(*) from lum_cmig_HMigItemMap where originServiceInstanceId = ? or destServiceInstanceId = ?",
+				originRepository.getId(), originRepository.getId()));
 	}
 
 	@Test
@@ -222,27 +239,145 @@ public class MediaDocumentMigrationTest
 		assertHtmlWithoutOriginDependency();
 	}
 
-	private void createRepositories(boolean document, boolean sameRepository) throws Exception
+	/**
+	 * Verifies that a document link and its HTML references reuse the original document
+	 * without adding repository items or mappings.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	@Test
+	public void sameDocumentRepositoryKeepsDocumentLinkAndHtmlWithoutClones() throws Exception
+	{
+		createRepositories(true, true);
+		String content = addContent("shared repository document link", null, repositoryItem);
+		assertSharedDocumentRepositoryReuse(content, true);
+	}
+
+	/**
+	 * Verifies that HTML alone reuses the original document file in a shared repository
+	 * without adding repository items or mappings.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	@Test
+	public void sameDocumentRepositoryKeepsHtmlWithoutADocumentLinkOrClone() throws Exception
+	{
+		createRepositories(true, true);
+		String content = addContent("shared repository HTML document", null, null);
+		assertSharedDocumentRepositoryReuse(content, false);
+	}
+
+	/**
+	 * Verifies that one migration reuses the shared image and clones the document from a
+	 * distinct repository, keeping the same destination content and references on rerun.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	@Test
+	public void sharedMediaAndDistinctDocumentRepositoriesAreHandledIndependently() throws Exception
+	{
+		ChannelConfig channel = createRepositories(true, false);
+		RepositoryItems sharedMedia = createRepositoryItems(channel, false, true);
+		String content = addContent("shared media and distinct documents", null, repositoryItem);
+		MediaFixture.setHierarchicalImage(origin, content, sharedMedia.item());
+		String mediaCount = repositoryItemCount(sharedMedia.destination());
+
+		migrate(content);
+		String clone = assertClone();
+		String cloneFileId = file(clone).getId();
+		String destinationContent = result(content, "destContentId");
+		assertMixedRepositoryReferences(content, sharedMedia, mediaCount, clone);
+
+		run();
+		assertEquals(destinationContent, result(content, "destContentId"));
+		assertEquals(clone, assertClone());
+		assertEquals(cloneFileId, file(clone).getId());
+		assertMixedRepositoryReferences(content, sharedMedia, mediaCount, clone);
+	}
+
+	/**
+	 * Checks both references and verifies that only the document repository gained items.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private void assertMixedRepositoryReferences(String content, RepositoryItems sharedMedia, String mediaCount, String clone)
+			throws Exception
+	{
+		assertEquals(sharedMedia.item(), result(content, "image"));
+		assertEquals("shared media repository item count", mediaCount, repositoryItemCount(sharedMedia.destination()));
+		String mediaRepositoryId = sharedMedia.destination().getId();
+		assertEquals("item mappings involving the shared media repository", "0", value(
+				"select count(*) from lum_cmig_HMigItemMap where originServiceInstanceId = ? or destServiceInstanceId = ?",
+				mediaRepositoryId, mediaRepositoryId));
+		assertEquals("two folders and one document in the destination repository", "3", repositoryItemCount());
+		assertReferences(content, clone, true);
+	}
+
+	/**
+	 * Checks destination references and repository state after migrating the selected content.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private void assertSharedDocumentRepositoryReuse(String content, boolean direct) throws Exception
+	{
+		String beforeCount = repositoryItemCount();
+		migrate(content);
+		assertReferences(content, repositoryItem, direct);
+		assertEquals("shared document repository item count", beforeCount, repositoryItemCount());
+		assertEquals("item mappings involving the shared document repository", "0", value(
+				"select count(*) from lum_cmig_HMigItemMap where originServiceInstanceId = ? or destServiceInstanceId = ?",
+				originRepository.getId(), originRepository.getId()));
+	}
+
+	/**
+	 * Creates the hierarchical instances and the repository items used by the clone assertions.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private ChannelConfig createRepositories(boolean document, boolean sameRepository) throws Exception
 	{
 		this.document = document;
 		ChannelConfig channel = portal.createChannel();
 		origin = portal.createServiceInstance(channel, PortalFixture.HIERARCHICAL_SERVICE_ID);
 		destination = portal.createServiceInstance(channel, PortalFixture.HIERARCHICAL_SERVICE_ID);
-		String service = document ? DocumentFixture.DOCUMENT_SERVICE_ID : PortalFixture.MEDIA_SERVICE_ID;
-		originRepository = portal.createServiceInstance(channel, service);
-		destinationRepository = sameRepository ? originRepository : portal.createServiceInstance(channel, service);
-		portal.setDependency(originRepository, origin, dependencyType());
-		portal.setDependency(destinationRepository, destination, dependencyType());
-		root = document ? documents.addFolder(originRepository, null, "root") : media.addFolder(originRepository, null, "root");
-		nested = document ? documents.addFolder(originRepository, root, "nested") : media.addFolder(originRepository, root, "nested");
-		repositoryItem = document
-				? documents.addDocument(originRepository, nested, "shared document", "description", "shared document.txt", "text/plain", BYTES)
-				: media.addMedia(originRepository, nested, "shared image", "shared image.png", "image/png", BYTES);
+		RepositoryItems items = createRepositoryItems(channel, document, sameRepository);
+		originRepository = items.origin();
+		destinationRepository = items.destination();
+		root = items.root();
+		nested = items.nested();
+		repositoryItem = items.item();
+		return channel;
 	}
 
-	private String dependencyType()
+	/**
+	 * Attaches one repository type to both hierarchical instances and creates its source items.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private RepositoryItems createRepositoryItems(ChannelConfig channel, boolean isDocument, boolean isShared) throws Exception
 	{
-		return document ? DocumentFixture.DOCUMENT_REPOSITORY_DEPENDENCY : ServiceInstanceDependencyConfig.DEPENDENCY_TYPE_MEDIA_REPOSITORY;
+		String service = isDocument ? DocumentFixture.DOCUMENT_SERVICE_ID : PortalFixture.MEDIA_SERVICE_ID;
+		ServiceInstanceConfig source = portal.createServiceInstance(channel, service);
+		ServiceInstanceConfig target = isShared ? source : portal.createServiceInstance(channel, service);
+		String dependency = dependencyType(isDocument);
+		portal.setDependency(source, origin, dependency);
+		portal.setDependency(target, destination, dependency);
+		String rootFolder = isDocument ? documents.addFolder(source, null, "root") : media.addFolder(source, null, "root");
+		String nestedFolder = isDocument ? documents.addFolder(source, rootFolder, "nested") : media.addFolder(source, rootFolder, "nested");
+		String item = isDocument
+				? documents.addDocument(source, nestedFolder, "shared document", "description", "shared document.txt", "text/plain", BYTES)
+				: media.addMedia(source, nestedFolder, "shared image", "shared image.png", "image/png", BYTES);
+		return new RepositoryItems(source, target, rootFolder, nestedFolder, item);
+	}
+
+	/**
+	 * Returns the dependency type for the requested repository.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private static String dependencyType(boolean isDocument)
+	{
+		return isDocument ? DocumentFixture.DOCUMENT_REPOSITORY_DEPENDENCY : ServiceInstanceDependencyConfig.DEPENDENCY_TYPE_MEDIA_REPOSITORY;
 	}
 
 	private String addContent(String title, String parent, String reference) throws Exception
@@ -271,7 +406,7 @@ public class MediaDocumentMigrationTest
 		{
 			ServiceInstanceDependencyConfig removal = new ServiceInstanceDependencyConfig();
 			removal.setDependentServiceInstanceId(origin.getId());
-			removal.setDependencyType(dependencyType());
+			removal.setDependencyType(dependencyType(document));
 			ManagerFactory.getServiceInstanceManager().setServiceInstanceDependency(removal, transaction);
 			return null;
 		});
@@ -448,9 +583,24 @@ public class MediaDocumentMigrationTest
 		}
 	}
 
+	/**
+	 * Counts content in the destination repository used by the clone assertions.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
 	private String repositoryItemCount() throws Exception
 	{
-		return value("select count(*) from lum_Content where serviceInstanceId = ?", destinationRepository.getId());
+		return repositoryItemCount(destinationRepository);
+	}
+
+	/**
+	 * Counts items in the specified repository, including folders.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private String repositoryItemCount(ServiceInstanceConfig repository) throws Exception
+	{
+		return value("select count(*) from lum_Content where serviceInstanceId = ?", repository.getId());
 	}
 
 	private String repositoryMapCount() throws Exception
@@ -525,5 +675,14 @@ public class MediaDocumentMigrationTest
 	private static Map<String, Object> map(Object value)
 	{
 		return (Map<String, Object>) value;
+	}
+
+	/**
+	 * Repositories and source items configured for one dependency type.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private record RepositoryItems(ServiceInstanceConfig origin, ServiceInstanceConfig destination, String root, String nested, String item)
+	{
 	}
 }
