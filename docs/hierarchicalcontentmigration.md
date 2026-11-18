@@ -17,7 +17,7 @@ O serviço `br.com.lumis.commons.contentmigrator.service.hierarchicalcontentmigr
 
 ### Pré-requisitos
 
-- Lumis Portal 18.1.1 e o módulo `br.com.lumis.commons.contentmigrator` publicado, como descrito no [README](../README.md).
+- Lumis Portal 19.0.0 e o módulo `br.com.lumis.commons.contentmigrator` publicado, como descrito no [README](../README.md).
 - Duas instâncias distintas do serviço `lumis.service.hierarchicalcontent`, com dependências compatíveis, pelas mesmas regras do original (workflow, mídia, documento, categorização, tags e widgets).
 
 ### Implantar e instalar
@@ -119,7 +119,35 @@ Tetos e erros:
 | `SELECTION_TOO_LARGE` | Mais ids que `maxSelection` |
 | `FORBIDDEN` | Usuário sem a permissão da operação |
 | `LOCKED` | Alteração, exclusão ou desfazer com a migração em execução, ou início com outra execução ativa |
+| `RULES_VIOLATED` | A origem e o destino não atendem às regras de validação (seção “Mensagens de validação”) |
 | `CONTENTMIGRATION_CONFLICT` | Conflito com o `contentmigration` original (decisão D5) |
+
+## Repositórios das dependências
+
+Para mídia, documento, widget, tag e categorização, origem e destino precisam ter um repositório do mesmo tipo. Há dois casos:
+
+| Situação | O que acontece |
+| --- | --- |
+| Os dois lados usam o **mesmo repositório** | Nada é clonado e nenhuma linha vai para `lum_cmig_HMigRepoMap` ou para o mapa de itens. As referências ficam como estão. Só o embed de um widget ou instância que não existe mais é removido, com aviso, porque o destino não consegue gravá-lo. |
+| Os lados usam **repositórios diferentes** | O conteúdo é copiado para o repositório do destino: mídias e documentos são copiados, os termos de categorização são copiados, as tags são criadas pelo nome e os widgets pedem o mapeamento antes de seguir. |
+
+Repositórios de modelos de e-mail e de termos de privacidade não são clonados: o destino precisa usar a mesma instância da origem.
+
+O **Desfazer** só remove o que a migração criou. Quando origem e destino usam o mesmo repositório (par X,X), esse par é ignorado, porque a migração não clonou nada nele; eventuais mapas antigos do par ficam até a exclusão da migração. Pares com repositórios diferentes continuam removidos, a menos que outra migração use o mesmo par.
+
+## Mensagens de validação
+
+Ao criar a migração, `DependencyRules.validate` junta **todas** as violações em vez de parar na primeira. A janela de erro mostra o texto do formulário seguido de uma linha por violação, na ordem de verificação (repositórios, workflow e sources), no idioma do usuário. Cada linha nomeia a instância (com o canal, quando ele pode ser lido) e termina com o passo a seguir. A API devolve `RULES_VIOLATED` com a lista estruturada ([RuleViolation](../src/br/com/lumis/commons/contentmigrator/service/hierarchicalcontentmigration/dto/RuleViolation.java)).
+
+| Regra | Causa | Passo do usuário |
+| --- | --- | --- |
+| `REPOSITORY_REQUIRED` | A origem usa um repositório de mídia, documento, widget, tag ou categorização e o destino não tem nenhum desse tipo. | Nas dependências do destino, vincule o mesmo repositório (nada é clonado) ou escolha outro do tipo. A mensagem diz o efeito: mídias e documentos copiados, termos copiados, tags criadas pelo nome ou widgets mapeados. |
+| `REPOSITORY_NOT_SHARED` | A origem usa um repositório de modelos de e-mail ou de termos de privacidade e o destino usa outro ou nenhum. A mensagem informa o que o destino usa hoje, ou que não usa nenhum. | Nas dependências do destino, vincule o repositório da origem. |
+| `DIFFERENT_WORKFLOW` | Origem e destino usam fluxos de trabalho diferentes, ou só um deles tem fluxo. A mensagem traz o nome localizado de cada um, ou “não tem fluxo de trabalho”. | Alinhe a configuração para que as duas instâncias usem o mesmo fluxo. |
+| `FILES_FIELD` | Um source do serviço de origem tem campo `files`, que este módulo não migra. | Use outro serviço ou remova o campo; não há como migrar esse serviço por este módulo. |
+| `TABLE_SOURCE` | O serviço de origem é `lum_content` e tem um source do tipo `table`. | Igual a `FILES_FIELD`. |
+
+Uma regra desconhecida aparece como “Um requisito da migração não foi atendido.”. Os textos estão em `strings.pt_br.xml` e `strings.en_us.xml`, nas chaves `STR_MIGRATION_RULE_*`, `STR_MIGRATION_EFFECT_*` e `STR_MIGRATION_DEPENDENCY_*`.
 
 ## Modelo de dados
 

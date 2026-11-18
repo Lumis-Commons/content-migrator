@@ -34,9 +34,13 @@ Este módulo é software livre, distribuído sob a [licença MIT](LICENSE): qual
 2. Instale o componente do módulo pelo processo padrão do Portal. O script de instalação aplica a definição do banco e cria as tabelas de controle da migração.
 3. Crie uma instância do serviço **Migração de conteúdo** em um canal administrativo.
 4. Conceda aos operadores permissão para visualizar a origem e editar o destino. Para mapear widgets, eles também precisam editar o repositório de widgets do destino.
-5. Configure as dependências das instâncias de conteúdo. Para mídia, documento, categorização, tags e widgets, a origem e o destino precisam de repositórios do mesmo tipo. Repositórios de modelos de e-mail e termos de privacidade precisam apontar para a mesma instância nos dois lados.
+5. Configure as dependências das instâncias de conteúdo. Para mídia, documento, categorização, tags e widgets, a origem e o destino precisam de repositórios do mesmo tipo, e há dois caminhos:
+   - **Mesmo repositório nos dois lados:** nada é clonado e as referências são mantidas como estão. Só o embed de um widget que não existe mais é removido, com aviso.
+   - **Repositórios diferentes:** o conteúdo da origem é copiado para o repositório do destino. Mídias e documentos são copiados, os termos de categorização são copiados, as tags são criadas pelo nome e os widgets pedem mapeamento.
 
-Antes de criar uma migração, o serviço valida que origem e destino usam o mesmo serviço, o mesmo workflow e dependências compatíveis. Fontes `table` e campos do tipo `files` bloqueiam a criação.
+   Repositórios de modelos de e-mail e termos de privacidade não são clonados e precisam apontar para a mesma instância nos dois lados.
+
+Antes de criar uma migração, o serviço valida que origem e destino usam o mesmo serviço, o mesmo workflow e dependências compatíveis. Fontes `table` e campos do tipo `files` bloqueiam a criação. Quando uma regra falha, a janela de erro lista uma linha por violação, com o nome da instância, o repositório envolvido e o passo para corrigir; a tabela de mensagens está em [docs/hierarchicalcontentmigration.md](docs/hierarchicalcontentmigration.md#mensagens-de-validação).
 
 ### Desinstalar
 
@@ -129,7 +133,8 @@ O runner compila o módulo antes do deploy e preserva o módulo instalado para r
 
 ### Escopo e fontes
 
-- **Repositórios `email_template` e `privacyterm`:** não são clonados; o destino precisa compartilhar a mesma instância da origem. Instâncias diferentes não podem migrar esse tipo de dependência. **Evolução:** implementar handlers e mapas próprios ou manter uma política explícita de compartilhamento.
+- **Repositórios `email_template` e `privacyterm`:** não são clonados; o destino precisa compartilhar a mesma instância da origem. Instâncias diferentes não podem migrar esse tipo de dependência.
+- **Repositório compartilhado (serviço hierárquico):** quando origem e destino usam o mesmo repositório de mídia, documento, widget, tag ou categorização, nada é copiado e o **Desfazer** não remove itens desse repositório, porque a migração não os criou. Trocar o repositório do destino depois de migrar não move o que já foi copiado. **Evolução:** implementar handlers e mapas próprios ou manter uma política explícita de compartilhamento.
 - **Campos `files`:** bloqueiam a criação da migração. Serviços com esses campos não podem ser migrados por este módulo. **Evolução:** criar handler de cópia e reescrita de referências para esse tipo.
 - **Sources `table`:** bloqueiam a criação mesmo em um serviço de conteúdo. Os dados dessas fontes não entram no mapa. **Evolução:** definir adaptadores por fonte, incluindo identidade, dependências e política de exclusão.
 - **Versões antigas:** somente a versão publicada e a ativa são copiadas. Histórico anterior não é preservado. **Evolução:** definir como copiar a linha do tempo de versões, autoria, comentários e estados.

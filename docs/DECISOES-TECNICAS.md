@@ -49,3 +49,23 @@ Registro das escolhas vigentes. IDs são estáveis e não devem ser reutilizados
 **Escolha.** Usar o perfil local já definido no POM quando a raiz aberta for `src`, preservando fontes e recursos durante `clean`. A sequência e a pendência da ferramenta externa ficam em `docs/OPERAR-MODULO-NO-PORTAL.md`, seção “Compilar e publicar”.
 
 **Evidência.** `pom.xml`, perfil `local-development`, altera a saída do compilador sem tornar `src` o diretório de build. `UpdateRunner.java`, método `mavenCommand`, linha 1964 da cópia externa consultada, só acrescenta esse perfil para o ID de outro módulo. Não se altera a ferramenta externa nesta decisão.
+
+## CM-D007 — Reuso de repositório compartilhado e par (X,X)
+
+**Contexto.** Origem e destino podem usar o mesmo repositório de mídia, documento, widget, tag ou categorização. Clonar itens para o repositório em que eles já estão duplicaria dados e deixaria mapas sem sentido.
+
+**Escolha.** Quando os dois lados usam a mesma instância de repositório, os handlers mantêm as referências sem clones e sem linhas de mapa; só removem, com aviso, o que o destino não consegue gravar, como o embed de um widget que não existe mais. Com repositórios diferentes, o conteúdo é copiado para o do destino. A validação exige apenas que o destino tenha um repositório do tipo; repositórios de e-mail e termos de privacidade continuam exigindo a mesma instância. O desfazer ignora o par (X,X), porque a migração nada criou nele, e deixa mapas antigos do par para a exclusão da migração.
+
+**Consequência.** O desfazer não apaga itens de um repositório compartilhado, e trocar o repositório do destino depois de migrar não move o que já foi copiado. A decisão vale só para o serviço hierárquico; o `contentmigration` original não muda.
+
+**Evidência.** `dependency/DependencyContext.isSameRepository`, `validation/DependencyRules` e `undo/MigrationUndoer.repositoryItems`. O comportamento está descrito em `docs/hierarchicalcontentmigration.md`, seção “Repositórios das dependências”.
+
+## CM-D008 — Violações de validação estruturadas
+
+**Contexto.** A mensagem única “As instâncias não atendem aos requisitos” não dizia qual regra falhou, em qual instância nem o que fazer, e a validação parava na primeira falha.
+
+**Escolha.** `DependencyRules.validate` devolve todas as violações como `RuleViolation` (regra, assunto, instâncias, repositórios e workflows), e `RulesViolatedException` e `MigrationApiException` as carregam sem texto localizado. O texto sai de `MigrationProcessActionHandler`, a partir das chaves `STR_MIGRATION_RULE_*` dos arquivos de strings, na língua da sessão, com uma linha por violação e o passo do usuário. A mensagem em inglês da violação serve só ao diagnóstico.
+
+**Consequência.** Quem chama a API recebe a lista estruturada e escolhe como exibi-la; a interface mostra todas as correções de uma vez. Nova regra exige uma chave `STR_MIGRATION_RULE_<REGRA>` nos dois idiomas, senão aparece a mensagem genérica de requisito não atendido.
+
+**Evidência.** `dto/RuleViolation`, `exception/RulesViolatedException`, `processaction/MigrationProcessActionHandler.formatViolation` e a tabela de `docs/hierarchicalcontentmigration.md`, seção “Mensagens de validação”.

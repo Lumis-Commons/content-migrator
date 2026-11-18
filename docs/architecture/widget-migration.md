@@ -2,7 +2,7 @@
 
 Documento para o agente que implementa o handler `widget_repository` (DependencyHandler do PAT002), o
 modal de mapeamento de widgets e os testes deles. Leia como instrução: cada regra abaixo diz o que
-fazer, com a evidência no código do Lumis Portal 18.1.1 (caminhos relativos a `Lumis_PortalJava/`) ou
+fazer, com a evidência no código do Lumis Portal 18.1.1, origem do porte e não reconferido na 19.0.0 (caminhos relativos a `Lumis_PortalJava/`) ou
 no módulo (caminhos relativos a `br.com.lumis.commons.contentmigrator/`).
 
 Contratos adotados: PAT001 r1 (persistência e mapeamento) e PAT002 r1 (SPI e regras de dependência).

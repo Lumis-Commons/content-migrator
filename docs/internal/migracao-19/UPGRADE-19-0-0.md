@@ -17,7 +17,7 @@ Nas tabelas, **C/** significa `src/br/com/lumis/commons/contentmigrator/service/
 
 ## Itens relevantes
 
-### 18.1.1
+### 18.1.1 (origem do porte)
 
 D1811 contém correção de tags HTML reordenadas na renderização com cache. Efeito indireto em `C/copy/ContentCopier.java` e `H/copy/ContentCopier.java`, que transportam os valores de campos, e nos testes `TC/test/spike/WidgetLinkSpikeTest.java` e `TH/test/migration/WidgetWorkflowMigrationTest.java`: comparar HTML persistido e seus vínculos, sem reproduzir no migrador a correção do renderizador. Não há mudança de API exigida por esse destaque. A recriação do índice de conhecimento de IA e a reindexação condicional são observações operacionais do portal; o módulo não administra esse índice.
 
@@ -80,7 +80,7 @@ Ordem proposta pelo estudo. A seção seguinte registra a decisão adotada; `tes
 6. **Verificar comportamento de conteúdo.** Usar os testes existentes de metadados, mídia/documento, widgets/workflow e multi-locale para verificar os arquivos apontados: descrição de mídia, HTML multibloco, Unicode, pais remapeados, UrlTitle de ancestral, hidden/position, primaryContent e navegação sem tradução. Verificar criação em destino vazio sem depender do conteúdo automático do layout.
 7. **Concluir compatibilidade por evidência.** Compilar e executar as suítes do módulo, registrando qualquer API efetivamente removida encontrada. O estudo não identificou uso local de Portlet/WSRP, SOAP, JAXB, upload antigo, Wicket ou Atmosphere; não há adaptação direta proposta para esses itens.
 
-Sem impacto direto adicional encontrado: índice de conhecimento e inicialização sem IA (18.1.1), e-mails do repositório de formulários (18.1.1), novos serviços de login/cadastro/landing page/identidade visual, editor de estilo e IA, comparação visual de versões, eventos de formulário/monitoramento, ajustes de Portal Studio/LEC/relatórios/reCAPTCHA e nomes visuais dos serviços nativos (19.0.0); não há consumidor correspondente nos imports, descritores ou scripts pesquisados.
+Sem impacto direto adicional encontrado: índice de conhecimento e inicialização sem IA (18.1.1, origem do porte), e-mails do repositório de formulários (18.1.1, origem do porte), novos serviços de login/cadastro/landing page/identidade visual, editor de estilo e IA, comparação visual de versões, eventos de formulário/monitoramento, ajustes de Portal Studio/LEC/relatórios/reCAPTCHA e nomes visuais dos serviços nativos (19.0.0); não há consumidor correspondente nos imports, descritores ou scripts pesquisados.
 
 ## Decisão vigente
 
