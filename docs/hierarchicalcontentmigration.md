@@ -109,10 +109,11 @@ Tetos e erros:
 
 ## API
 
-`MigrationApi.create` recebe `name`, `originServiceInstanceId`, `destServiceInstanceId`, `selectedContentIds` (ids separados por vírgula) e, opcionalmente, `updateMode`. `MigrationApi.updateSelection` recebe `migrationId` e `selectedContentIds`. Os dois aplicam o teto `maxSelection` antes de separar os ids ([MigrationApi.readContentIds, linhas 182-210](../src/br/com/lumis/commons/contentmigrator/service/hierarchicalcontentmigration/api/MigrationApi.java#L182-L210)).
+`MigrationApi.create` recebe `name`, `originServiceInstanceId`, `destServiceInstanceId`, `selectedContentIds` (ids separados por vírgula) e, opcionalmente, `updateMode`. `MigrationApi.updateSelection` recebe `migrationId` e `selectedContentIds`. Os dois aplicam o teto `maxSelection` antes de separar os ids ([MigrationApi.readContentIds, linhas 190-218](../src/br/com/lumis/commons/contentmigrator/service/hierarchicalcontentmigration/api/MigrationApi.java#L190-L218)).
 
 | Código | Quando |
 | --- | --- |
+| `REQUIRED` | Falta um parâmetro obrigatório; a exceção traz os nomes de todos os que faltam (seção “Campos obrigatórios”) |
 | `NOT_HIERARCHICAL` | A instância não é do serviço hierárquico |
 | `NO_SELECTION` | Nenhum conteúdo marcado, ou a hierarquia selecionada ficou vazia no início |
 | `INVALID_SELECTION` | Um id não está na origem |
@@ -149,6 +150,20 @@ Ao criar a migração, `DependencyRules.validate` junta **todas** as violações
 
 Uma regra desconhecida aparece como “Um requisito da migração não foi atendido.”. Os textos estão em `strings.pt_br.xml` e `strings.en_us.xml`, nas chaves `STR_MIGRATION_RULE_*`, `STR_MIGRATION_EFFECT_*` e `STR_MIGRATION_DEPENDENCY_*`.
 
+## Campos obrigatórios
+
+`MigrationApi.create` confere `name`, `originServiceInstanceId`, `destServiceInstanceId` e `selectedContentIds` de uma só vez e falha com `REQUIRED` listando **todos** os que faltam (`MigrationApiException.getFields`); as demais operações conferem `migrationId`. A conferência só lê o pedido e roda antes de abrir transação e sessão de sistema temporária, inclusive em `updateSelection`, que antes validava o `migrationId` já dentro da transação.
+
+O `MigrationProcessActionHandler` não precisa de transação nem de sessão de sistema para explicar a falha: monta o texto com as strings do módulo no idioma da sessão do usuário. A janela de erro traz o botão acionado, o formulário, uma linha por campo com o que fazer e o botão a clicar de novo.
+
+| Ação | Formulário citado | Campos que podem faltar |
+| --- | --- | --- |
+| `createMigration` | Nova migração | Nome, Origem, Destino, Conteúdos a migrar |
+| `updateSelection` | Alterar seleção | Migração selecionada |
+| `startIncremental`, `startUpdate`, `stopMigration`, `deleteMigration`, `undoMigration` | Lista de migrações | Migração selecionada |
+
+Se a ação ou o campo não estiver nessa tabela, a janela mostra o texto genérico `STR_MIGRATION_REQUIRED`. Os textos estão nas chaves `STR_MIGRATION_REQUIRED_*`, `STR_MIGRATION_FORM_LIST` e `STR_MIGRATION_SELECTED`. O `WidgetMappingProcessActionHandler` não traduz erros da API; o formulário de mapeamento de widget valida o widget de destino no navegador.
+
 ## Modelo de dados
 
 | Tabela | Finalidade |
@@ -182,11 +197,11 @@ Primeiro o locale de referência de cada conteúdo, em ordem topológica sobre a
 
 ### D4. Seleção editável e par único
 
-O par continua único. **Alterar seleção** regrava as marcas na transação que trava a linha da migração ([MigrationApi.updateSelection, linhas 139-160](../src/br/com/lumis/commons/contentmigrator/service/hierarchicalcontentmigration/api/MigrationApi.java#L139-L160), com [MigrationDao.lockStoppedMigration, linhas 169-183](../src/br/com/lumis/commons/contentmigrator/service/hierarchicalcontentmigration/dao/MigrationDao.java#L169-L183)), o que a serializa com início, exclusão e desfazer. As validações são as da criação.
+O par continua único. **Alterar seleção** regrava as marcas na transação que trava a linha da migração ([MigrationApi.updateSelection, linhas 147-168](../src/br/com/lumis/commons/contentmigrator/service/hierarchicalcontentmigration/api/MigrationApi.java#L147-L168), com [MigrationDao.lockStoppedMigration, linhas 169-183](../src/br/com/lumis/commons/contentmigrator/service/hierarchicalcontentmigration/dao/MigrationDao.java#L169-L183)), o que a serializa com início, exclusão e desfazer. As validações são as da criação.
 
 ### D5. Convivência com `contentmigration`
 
-[MigrationApi.hasContentMigrationConflict, linhas 166-173](../src/br/com/lumis/commons/contentmigrator/service/hierarchicalcontentmigration/api/MigrationApi.java#L166-L173) aplica a regra:
+[MigrationApi.hasContentMigrationConflict, linhas 174-181](../src/br/com/lumis/commons/contentmigrator/service/hierarchicalcontentmigration/api/MigrationApi.java#L174-L181) aplica a regra:
 
 - Criar e iniciar recusam com `CONTENTMIGRATION_CONFLICT` quando `lum_cmig_Migration` já tem o mesmo par ([ContentMigrationCoexistenceDao.hasPair, linhas 23-42](../src/br/com/lumis/commons/contentmigrator/service/hierarchicalcontentmigration/dao/ContentMigrationCoexistenceDao.java#L23-L42)). Os dois serviços têm mapas separados, e o mesmo par duplicaria conteúdos.
 - Iniciar também recusa quando `lum_cmig_MigLock` tem execução recente gravando no mesmo destino ([ContentMigrationCoexistenceDao.hasActiveDestination, linhas 48-69](../src/br/com/lumis/commons/contentmigrator/service/hierarchicalcontentmigration/dao/ContentMigrationCoexistenceDao.java#L48-L69)). A checagem roda na transação que toma a trava, e a recusa desfaz a trava.
@@ -201,7 +216,7 @@ O `contentmigration` não foi alterado e não conhece esta regra. Não use o ori
 
 ### D7. Regra de acesso
 
-Escolher o escopo, excluir e desfazer exigem `MANAGE_PORTAL`, porque o desfazer apaga cópias e clones de repositório e a exclusão apaga mapas que só um administrador recria. Iniciar e parar seguem a regra do original ([MigrationApi.start, linhas 516-552](../src/br/com/lumis/commons/contentmigrator/service/hierarchicalcontentmigration/api/MigrationApi.java#L516-L552)). A tabela completa está em [Permissões](#permissões).
+Escolher o escopo, excluir e desfazer exigem `MANAGE_PORTAL`, porque o desfazer apaga cópias e clones de repositório e a exclusão apaga mapas que só um administrador recria. Iniciar e parar seguem a regra do original ([MigrationApi.start, linhas 549-585](../src/br/com/lumis/commons/contentmigrator/service/hierarchicalcontentmigration/api/MigrationApi.java#L549-L585)). A tabela completa está em [Permissões](#permissões).
 
 ### D8. Heartbeat pelo relógio do banco
 

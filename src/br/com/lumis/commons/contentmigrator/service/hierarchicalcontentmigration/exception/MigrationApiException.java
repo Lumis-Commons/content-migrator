@@ -55,6 +55,13 @@ public class MigrationApiException extends RuntimeException
 	private final List<RuleViolation> violations;
 
 	/**
+	 * Names of the request parameters reported as missing, empty for other validation failures.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private final List<String> fields;
+
+	/**
 	 * Creates an API validation exception with an error code and diagnostic message.
 	 *
 	 * @since %LUM_NEXT_VERSION%
@@ -64,6 +71,25 @@ public class MigrationApiException extends RuntimeException
 		super(code + ": " + message);
 		this.code = code;
 		this.violations = List.of();
+		this.fields = List.of();
+	}
+
+	/**
+	 * Creates the {@link #ERROR_REQUIRED} exception that names every missing request parameter, so that the
+	 * caller can tell the user which fields to fill in.
+	 *
+	 * @param message
+	 *            diagnostic message, not meant to be shown to the user.
+	 * @param fields
+	 *            names of the missing parameters, in the order they were checked.
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	public MigrationApiException(String message, List<String> fields)
+	{
+		super(ERROR_REQUIRED + ": " + message);
+		this.code = ERROR_REQUIRED;
+		this.violations = List.of();
+		this.fields = List.copyOf(fields);
 	}
 
 	/**
@@ -76,6 +102,7 @@ public class MigrationApiException extends RuntimeException
 		super(ERROR_RULES_VIOLATED + ": " + cause.getMessage(), cause);
 		this.code = ERROR_RULES_VIOLATED;
 		this.violations = List.copyOf(cause.getViolations());
+		this.fields = List.of();
 	}
 
 	/**
@@ -86,6 +113,17 @@ public class MigrationApiException extends RuntimeException
 	public List<RuleViolation> getViolations()
 	{
 		return violations;
+	}
+
+	/**
+	 * Returns the names of the missing request parameters of an {@link #ERROR_REQUIRED} failure.
+	 *
+	 * @return the immutable list of parameter names, empty for any other failure.
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	public List<String> getFields()
+	{
+		return fields;
 	}
 
 	/** Returns the machine-readable {@code ERROR_*} code of this validation failure. */

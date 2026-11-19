@@ -76,6 +76,32 @@ public class MigrationProcessActionHandler extends GenericProcessActionHandler
 			ServiceInstanceDependencyConfig.DEPENDENCY_TYPE_CATEGORIZATION_REPOSITORY, "STR_MIGRATION_EFFECT_CATEGORIZATION");
 
 	/**
+	 * Form and button of each process action, used to tell the user where a required field is missing.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private static final Map<String, ActionForm> ACTION_FORMS = Map.of(
+			"createMigration", new ActionForm("STR_ADD_MIGRATION", "STR_CREATE"),
+			"updateSelection", new ActionForm("STR_EDIT_SELECTION", "STR_SAVE_SELECTION"),
+			"startIncremental", new ActionForm("STR_MIGRATION_FORM_LIST", "STR_START_INCREMENTAL"),
+			"startUpdate", new ActionForm("STR_MIGRATION_FORM_LIST", "STR_START_UPDATE"),
+			"stopMigration", new ActionForm("STR_MIGRATION_FORM_LIST", "STR_STOP"),
+			"deleteMigration", new ActionForm("STR_MIGRATION_FORM_LIST", "STR_DELETE"),
+			"undoMigration", new ActionForm("STR_MIGRATION_FORM_LIST", "STR_UNDO"));
+
+	/**
+	 * Label and instruction of each request parameter that an action can find missing, keyed by parameter name.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private static final Map<String, RequiredField> REQUIRED_FIELDS = Map.of(
+			"name", new RequiredField("STR_NAME", "STR_MIGRATION_REQUIRED_HINT_NAME"),
+			"originServiceInstanceId", new RequiredField("STR_ORIGIN", "STR_MIGRATION_REQUIRED_HINT_ORIGIN"),
+			"destServiceInstanceId", new RequiredField("STR_DESTINATION", "STR_MIGRATION_REQUIRED_HINT_DESTINATION"),
+			"selectedContentIds", new RequiredField("STR_CONTENTS_TO_MIGRATE", "STR_MIGRATION_REQUIRED_HINT_CONTENTS"),
+			"migrationId", new RequiredField("STR_MIGRATION_SELECTED", "STR_MIGRATION_REQUIRED_HINT_MIGRATION"));
+
+	/**
 	 * Dispatches the form action and localizes API validation failures.
 	 *
 	 * @since %LUM_NEXT_VERSION%
@@ -132,6 +158,10 @@ public class MigrationProcessActionHandler extends GenericProcessActionHandler
 			{
 				throw localizedViolations(key, exception);
 			}
+			if (MigrationApiException.ERROR_REQUIRED.equals(exception.getCode()) && namesKnownFields(exception))
+			{
+				throw localizedRequiredFields(exception);
+			}
 			throw new PortalException(key, STRINGS, exception);
 		}
 		addDefaultResponse();
@@ -150,7 +180,40 @@ public class MigrationProcessActionHandler extends GenericProcessActionHandler
 		{
 			message.append("\n• ").append(formatViolation(violation, locale));
 		}
-		return new LocalizedViolationsException(message.toString(), exception);
+		return new LocalizedMessageException(message.toString(), exception);
+	}
+
+	/**
+	 * Tells whether the missing parameters and the running action are known, so that a precise message can be built;
+	 * otherwise the generic required-fields message is shown.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private boolean namesKnownFields(MigrationApiException exception) throws PortalException
+	{
+		return ACTION_FORMS.containsKey(getId()) && !exception.getFields().isEmpty() && REQUIRED_FIELDS.keySet().containsAll(exception.getFields());
+	}
+
+	/**
+	 * Builds a popup message that names the form, lists each missing field with what to do about it, and says which
+	 * button to press again. The texts come from the service strings in the session locale, so no transaction or system
+	 * session is needed to show them.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private PortalException localizedRequiredFields(MigrationApiException exception) throws PortalException
+	{
+		Locale locale = sessionConfig.getLocale();
+		ActionForm actionForm = ACTION_FORMS.get(getId());
+		String button = localize(actionForm.buttonKey(), locale);
+		StringBuilder message = new StringBuilder(format("STR_MIGRATION_REQUIRED_HEADER", locale, button, localize(actionForm.formKey(), locale)));
+		for (String name : exception.getFields())
+		{
+			RequiredField field = REQUIRED_FIELDS.get(name);
+			message.append("\n• ").append(format("STR_MIGRATION_REQUIRED_FIELD", locale, localize(field.labelKey(), locale), localize(field.hintKey(), locale)));
+		}
+		message.append('\n').append(format("STR_MIGRATION_REQUIRED_RETRY", locale, button));
+		return new LocalizedMessageException(message.toString(), exception);
 	}
 
 	/**
@@ -294,11 +357,37 @@ public class MigrationProcessActionHandler extends GenericProcessActionHandler
 	}
 
 	/**
+	 * Form and button where the user triggers a process action.
+	 *
+	 * @param formKey
+	 *            string id of the form name.
+	 * @param buttonKey
+	 *            string id of the button label.
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private record ActionForm(String formKey, String buttonKey)
+	{
+	}
+
+	/**
+	 * Display texts of a request parameter that a process action requires.
+	 *
+	 * @param labelKey
+	 *            string id of the field label the user sees.
+	 * @param hintKey
+	 *            string id of the instruction on how to fill the field.
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private record RequiredField(String labelKey, String hintKey)
+	{
+	}
+
+	/**
 	 * Carries a message already localized and formatted for the form session.
 	 *
 	 * @since %LUM_NEXT_VERSION%
 	 */
-	private static final class LocalizedViolationsException extends PortalException
+	private static final class LocalizedMessageException extends PortalException
 	{
 		/**
 		 * Serialization identifier for the localized exception.
@@ -312,7 +401,7 @@ public class MigrationProcessActionHandler extends GenericProcessActionHandler
 		 *
 		 * @since %LUM_NEXT_VERSION%
 		 */
-		private LocalizedViolationsException(String message, MigrationApiException cause)
+		private LocalizedMessageException(String message, MigrationApiException cause)
 		{
 			super(message, cause);
 		}

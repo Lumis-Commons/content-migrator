@@ -85,13 +85,18 @@ public class MigrationApi
 	 *            too), and optional updateMode ({@code ADD_ONLY}, the default, or {@code UPDATE}).
 	 *            Both instances must be of the service {@value HierarchicalContentService#SERVICE_ID}.
 	 * @return the created migration, in the same format returned by {@link #get(String)}.
+	 * @throws MigrationApiException
+	 *             with {@link MigrationApiException#ERROR_REQUIRED} naming all the missing parameters at once,
+	 *             before any transaction or temporary system session is opened.
+	 * @since %LUM_NEXT_VERSION%
 	 */
 	public static Map<String, Object> create(Map<String, Object> params)
 	{
-		String name = requireParameter(params, "name");
-		String originInstanceId = requireParameter(params, "originServiceInstanceId");
-		String destinationInstanceId = requireParameter(params, "destServiceInstanceId");
-		List<String> requestedContentIds = readContentIds(requireParameter(params, "selectedContentIds"));
+		requireParameters(params, "name", "originServiceInstanceId", "destServiceInstanceId", "selectedContentIds");
+		String name = (String) params.get("name");
+		String originInstanceId = (String) params.get("originServiceInstanceId");
+		String destinationInstanceId = (String) params.get("destServiceInstanceId");
+		List<String> requestedContentIds = readContentIds((String) params.get("selectedContentIds"));
 		String requestedUpdateMode = readUpdateMode(params);
 		String updateMode = requestedUpdateMode == null ? "ADD_ONLY" : requestedUpdateMode;
 		String author = getCurrentUserId();
@@ -134,15 +139,18 @@ public class MigrationApi
 	/**
 	 * Replaces the minimal marks while holding the migration row lock. Removed contents remain
 	 * at the destination and in the pair's maps, so undo still removes them. An interrupted
-	 * RUNNING migration must be restarted and stopped before its selection can be changed.
+	 * RUNNING migration must be restarted and stopped before its selection can be changed. The migration id is
+	 * validated before the transaction and the temporary system session are opened.
+	 *
+	 * @since %LUM_NEXT_VERSION%
 	 */
 	public static Map<String, Object> updateSelection(Map<String, Object> params)
 	{
+		String migrationId = requireParameter(params, "migrationId");
 		String userId = getCurrentUserId();
 		return runInTransaction((connection, session, transaction) ->
 		{
 			MigrationPermissions.requirePortalAdministrator(userId, transaction);
-			String migrationId = requireParameter(params, "migrationId");
 			if (!MigrationDao.lockStoppedMigration(connection, migrationId))
 			{
 				requireMigration(connection, migrationId);
@@ -231,14 +239,39 @@ public class MigrationApi
 		return MigrationSelection.of(connection, originInstanceId, tree, minimal);
 	}
 
+	/**
+	 * Returns a required request parameter, failing with the name of the parameter when it is missing or blank.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
 	private static String requireParameter(Map<String, Object> params, String key)
 	{
-		Object value = params == null ? null : params.get(key);
-		if (!(value instanceof String) || ((String) value).trim().isEmpty())
+		requireParameters(params, key);
+		return (String) params.get(key);
+	}
+
+	/**
+	 * Checks that every given request parameter is a non-blank string and reports all the missing ones in a single
+	 * {@link MigrationApiException#ERROR_REQUIRED} failure, so that the user can fix them in one attempt. It only
+	 * reads the request: no transaction or system session is needed, and none should be open yet.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private static void requireParameters(Map<String, Object> params, String... keys)
+	{
+		List<String> missing = new ArrayList<>();
+		for (String key : keys)
 		{
-			throw new MigrationApiException(MigrationApiException.ERROR_REQUIRED, key + " is required");
+			Object value = params == null ? null : params.get(key);
+			if (!(value instanceof String) || ((String) value).trim().isEmpty())
+			{
+				missing.add(key);
+			}
 		}
-		return (String) value;
+		if (!missing.isEmpty())
+		{
+			throw new MigrationApiException(String.join(", ", missing) + (missing.size() == 1 ? " is required" : " are required"), missing);
+		}
 	}
 
 	private static String readUpdateMode(Map<String, Object> params)
@@ -735,6 +768,11 @@ public class MigrationApi
 		});
 	}
 
+	/**
+	 * Returns an optional request parameter, or {@code null} when it is absent or blank.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
 	private static String readOptionalParameter(Map<String, Object> params, String key)
 	{
 		Object value = params == null ? null : params.get(key);
@@ -744,7 +782,7 @@ public class MigrationApi
 		}
 		if (!(value instanceof String))
 		{
-			throw new MigrationApiException(MigrationApiException.ERROR_REQUIRED, key + " must be a string");
+			throw new MigrationApiException(key + " must be a string", List.of(key));
 		}
 		return (String) value;
 	}

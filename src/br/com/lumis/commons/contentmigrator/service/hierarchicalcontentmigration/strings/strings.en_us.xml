@@ -78,6 +78,18 @@
 	<string id="STR_WARNING_PAGE_LAYOUT">Page layout {0} is absent from the destination pageLayouts; the default detail will be used.</string>
 	<string id="STR_CONTENTMIGRATION_CONFLICT">The original content migration already owns this instance pair or has an active run to this destination.</string>
 	<string id="STR_MIGRATION_REQUIRED">Fill in all required fields.</string>
+	<string id="STR_MIGRATION_FORM_LIST">Migration list</string>
+	<string id="STR_MIGRATION_SELECTED">Selected migration</string>
+	<string id="STR_MIGRATION_REQUIRED_HEADER">Could not run “{0}”: required information is missing in the “{1}” form.</string>
+	<string id="STR_MIGRATION_REQUIRED_FIELD">{0}: {1}</string>
+	<string id="STR_MIGRATION_REQUIRED_RETRY">Fix what is listed above and click “{0}” again.</string>
+	<string id="STR_MIGRATION_REQUIRED_HINT_NAME">enter a name that identifies the migration.</string>
+	<string id="STR_MIGRATION_REQUIRED_HINT_ORIGIN">choose the service instance the contents will be copied from.</string>
+	<string id="STR_MIGRATION_REQUIRED_HINT_DESTINATION">choose the service instance that will receive the copied contents.</string>
+	<string id="STR_MIGRATION_REQUIRED_HINT_CONTENTS">mark at least one content in the content list; its descendants are migrated along with it. <!--
+		-->The list only appears after you choose the origin.</string>
+	<string id="STR_MIGRATION_REQUIRED_HINT_MIGRATION">tick the checkbox of a migration in the list. If it was already ticked, <!--
+		-->refresh the page (F5) and try again.</string>
 	<string id="STR_MIGRATION_INSTANCE_NOT_FOUND">The service instance was not found.</string>
 	<string id="STR_MIGRATION_SAME_INSTANCE">Choose different origin and destination instances.</string>
 	<string id="STR_MIGRATION_DOUI_SERVICE">DOUI service instances cannot be migrated.</string>
