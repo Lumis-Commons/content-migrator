@@ -88,8 +88,9 @@
 	<string id="STR_MIGRATION_REQUIRED_HINT_DESTINATION">choose the service instance that will receive the copied contents.</string>
 	<string id="STR_MIGRATION_REQUIRED_HINT_CONTENTS">mark at least one content in the content list; its descendants are migrated along with it. <!--
 		-->The list only appears after you choose the origin.</string>
-	<string id="STR_MIGRATION_REQUIRED_HINT_MIGRATION">tick the checkbox of a migration in the list. If it was already ticked, <!--
-		-->refresh the page (F5) and try again.</string>
+	<string id="STR_MIGRATION_REQUIRED_HINT_MIGRATION">tick the checkbox of exactly one migration in the list; the button acts on the ticked migration.</string>
+	<string id="STR_MIGRATION_REQUIRED_HINT_REOPEN">close this window, tick the checkbox of the migration in the list <!--
+		-->and open it again with the button of the same name.</string>
 	<string id="STR_MIGRATION_INSTANCE_NOT_FOUND">The service instance was not found.</string>
 	<string id="STR_MIGRATION_SAME_INSTANCE">Choose different origin and destination instances.</string>
 	<string id="STR_MIGRATION_DOUI_SERVICE">DOUI service instances cannot be migrated.</string>

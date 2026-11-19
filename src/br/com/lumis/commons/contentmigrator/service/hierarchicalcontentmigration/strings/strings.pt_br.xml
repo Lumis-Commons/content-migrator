@@ -88,7 +88,8 @@
 	<string id="STR_MIGRATION_REQUIRED_HINT_DESTINATION">escolha a instância de serviço que receberá os conteúdos copiados.</string>
 	<string id="STR_MIGRATION_REQUIRED_HINT_CONTENTS">marque ao menos um conteúdo na lista de conteúdos; os descendentes dele são migrados junto. <!--
 		-->A lista só aparece depois de escolher a origem.</string>
-	<string id="STR_MIGRATION_REQUIRED_HINT_MIGRATION">marque a caixa de uma migração na lista. Se ela já estava marcada, atualize a página (F5) e tente de novo.</string>
+	<string id="STR_MIGRATION_REQUIRED_HINT_MIGRATION">marque a caixa de uma única migração na lista; o botão age sobre a migração marcada.</string>
+	<string id="STR_MIGRATION_REQUIRED_HINT_REOPEN">feche esta janela, marque a caixa da migração na lista e abra-a de novo pelo botão de mesmo nome.</string>
 	<string id="STR_MIGRATION_INSTANCE_NOT_FOUND">A instância de serviço não foi encontrada.</string>
 	<string id="STR_MIGRATION_SAME_INSTANCE">Escolha instâncias de origem e destino diferentes.</string>
 	<string id="STR_MIGRATION_DOUI_SERVICE">Instâncias de serviço DOUI não podem ser migradas.</string>

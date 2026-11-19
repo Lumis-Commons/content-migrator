@@ -76,21 +76,32 @@ public class MigrationProcessActionHandler extends GenericProcessActionHandler
 			ServiceInstanceDependencyConfig.DEPENDENCY_TYPE_CATEGORIZATION_REPOSITORY, "STR_MIGRATION_EFFECT_CATEGORIZATION");
 
 	/**
-	 * Form and button of each process action, used to tell the user where a required field is missing.
+	 * Parameter that carries the rows checked in the migration list. The list control posts them under its data id,
+	 * {@code id}; DOUI ignores the {@code addParameters} of a button whose click runs a process action, so the
+	 * {@code migrationId} declared there never reaches this handler.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private static final String LIST_SELECTION_PARAMETER = "id";
+
+	/**
+	 * Form, button and migration instruction of each process action, used to tell the user where a required field is
+	 * missing.
 	 *
 	 * @since %LUM_NEXT_VERSION%
 	 */
 	private static final Map<String, ActionForm> ACTION_FORMS = Map.of(
-			"createMigration", new ActionForm("STR_ADD_MIGRATION", "STR_CREATE"),
-			"updateSelection", new ActionForm("STR_EDIT_SELECTION", "STR_SAVE_SELECTION"),
-			"startIncremental", new ActionForm("STR_MIGRATION_FORM_LIST", "STR_START_INCREMENTAL"),
-			"startUpdate", new ActionForm("STR_MIGRATION_FORM_LIST", "STR_START_UPDATE"),
-			"stopMigration", new ActionForm("STR_MIGRATION_FORM_LIST", "STR_STOP"),
-			"deleteMigration", new ActionForm("STR_MIGRATION_FORM_LIST", "STR_DELETE"),
-			"undoMigration", new ActionForm("STR_MIGRATION_FORM_LIST", "STR_UNDO"));
+			"createMigration", new ActionForm("STR_ADD_MIGRATION", "STR_CREATE", null),
+			"updateSelection", new ActionForm("STR_EDIT_SELECTION", "STR_SAVE_SELECTION", "STR_MIGRATION_REQUIRED_HINT_REOPEN"),
+			"startIncremental", new ActionForm("STR_MIGRATION_FORM_LIST", "STR_START_INCREMENTAL", "STR_MIGRATION_REQUIRED_HINT_MIGRATION"),
+			"startUpdate", new ActionForm("STR_MIGRATION_FORM_LIST", "STR_START_UPDATE", "STR_MIGRATION_REQUIRED_HINT_MIGRATION"),
+			"stopMigration", new ActionForm("STR_MIGRATION_FORM_LIST", "STR_STOP", "STR_MIGRATION_REQUIRED_HINT_MIGRATION"),
+			"deleteMigration", new ActionForm("STR_MIGRATION_FORM_LIST", "STR_DELETE", "STR_MIGRATION_REQUIRED_HINT_MIGRATION"),
+			"undoMigration", new ActionForm("STR_MIGRATION_FORM_LIST", "STR_UNDO", "STR_MIGRATION_REQUIRED_HINT_MIGRATION"));
 
 	/**
-	 * Label and instruction of each request parameter that an action can find missing, keyed by parameter name.
+	 * Label and instruction of each field of the new migration form, keyed by request parameter name. The migration of
+	 * the other actions is explained by its form, in {@link ActionForm#migrationHintKey()}.
 	 *
 	 * @since %LUM_NEXT_VERSION%
 	 */
@@ -98,8 +109,7 @@ public class MigrationProcessActionHandler extends GenericProcessActionHandler
 			"name", new RequiredField("STR_NAME", "STR_MIGRATION_REQUIRED_HINT_NAME"),
 			"originServiceInstanceId", new RequiredField("STR_ORIGIN", "STR_MIGRATION_REQUIRED_HINT_ORIGIN"),
 			"destServiceInstanceId", new RequiredField("STR_DESTINATION", "STR_MIGRATION_REQUIRED_HINT_DESTINATION"),
-			"selectedContentIds", new RequiredField("STR_CONTENTS_TO_MIGRATE", "STR_MIGRATION_REQUIRED_HINT_CONTENTS"),
-			"migrationId", new RequiredField("STR_MIGRATION_SELECTED", "STR_MIGRATION_REQUIRED_HINT_MIGRATION"));
+			"selectedContentIds", new RequiredField("STR_CONTENTS_TO_MIGRATE", "STR_MIGRATION_REQUIRED_HINT_CONTENTS"));
 
 	/**
 	 * Dispatches the form action and localizes API validation failures.
@@ -111,7 +121,7 @@ public class MigrationProcessActionHandler extends GenericProcessActionHandler
 	{
 		try
 		{
-			String migrationId = (String) getParameter("migrationId");
+			String migrationId = readMigrationId();
 			switch (getId())
 			{
 				case "createMigration" :
@@ -168,6 +178,27 @@ public class MigrationProcessActionHandler extends GenericProcessActionHandler
 	}
 
 	/**
+	 * Reads the migration the action applies to. The selection form posts it as {@code migrationId}; the buttons of the
+	 * migration list post the checked row, which arrives as {@value #LIST_SELECTION_PARAMETER}. Anything other than
+	 * exactly one checked row gives {@code null}, so the API reports the migration as missing instead of picking one.
+	 *
+	 * @return the id of the migration, or {@code null} when the request does not identify a single one.
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private String readMigrationId()
+	{
+		// The base handler is a raw type, so the converted value comes back as Object.
+		String migrationId = (String) getParameter("migrationId", String.class);
+		if (migrationId != null && !migrationId.isBlank())
+		{
+			return migrationId;
+		}
+		String[] checkedRows = (String[]) getParameter(LIST_SELECTION_PARAMETER, String[].class);
+		boolean hasSingleRow = checkedRows != null && checkedRows.length == 1;
+		return hasSingleRow ? checkedRows[0] : null;
+	}
+
+	/**
 	 * Builds one localized popup line per violation in validation order.
 	 *
 	 * @since %LUM_NEXT_VERSION%
@@ -191,7 +222,24 @@ public class MigrationProcessActionHandler extends GenericProcessActionHandler
 	 */
 	private boolean namesKnownFields(MigrationApiException exception) throws PortalException
 	{
-		return ACTION_FORMS.containsKey(getId()) && !exception.getFields().isEmpty() && REQUIRED_FIELDS.keySet().containsAll(exception.getFields());
+		ActionForm actionForm = ACTION_FORMS.get(getId());
+		if (actionForm == null || exception.getFields().isEmpty())
+		{
+			return false;
+		}
+		return exception.getFields().stream().allMatch(name -> requiredField(name, actionForm) != null);
+	}
+
+	/**
+	 * Returns the label and instruction of a missing parameter in the given form, or {@code null} when the form cannot
+	 * explain it. The migration is chosen in the migration list, so its instruction depends on the form.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private static RequiredField requiredField(String name, ActionForm actionForm)
+	{
+		boolean isFormMigration = "migrationId".equals(name) && actionForm.migrationHintKey() != null;
+		return isFormMigration ? new RequiredField("STR_MIGRATION_SELECTED", actionForm.migrationHintKey()) : REQUIRED_FIELDS.get(name);
 	}
 
 	/**
@@ -209,7 +257,7 @@ public class MigrationProcessActionHandler extends GenericProcessActionHandler
 		StringBuilder message = new StringBuilder(format("STR_MIGRATION_REQUIRED_HEADER", locale, button, localize(actionForm.formKey(), locale)));
 		for (String name : exception.getFields())
 		{
-			RequiredField field = REQUIRED_FIELDS.get(name);
+			RequiredField field = requiredField(name, actionForm);
 			message.append("\n• ").append(format("STR_MIGRATION_REQUIRED_FIELD", locale, localize(field.labelKey(), locale), localize(field.hintKey(), locale)));
 		}
 		message.append('\n').append(format("STR_MIGRATION_REQUIRED_RETRY", locale, button));
@@ -357,15 +405,18 @@ public class MigrationProcessActionHandler extends GenericProcessActionHandler
 	}
 
 	/**
-	 * Form and button where the user triggers a process action.
+	 * Form and button where the user triggers a process action, and how that form receives the migration.
 	 *
 	 * @param formKey
 	 *            string id of the form name.
 	 * @param buttonKey
 	 *            string id of the button label.
+	 * @param migrationHintKey
+	 *            string id of the instruction on how to supply the migration in this form, or {@code null} when the
+	 *            form creates the migration.
 	 * @since %LUM_NEXT_VERSION%
 	 */
-	private record ActionForm(String formKey, String buttonKey)
+	private record ActionForm(String formKey, String buttonKey, String migrationHintKey)
 	{
 	}
 

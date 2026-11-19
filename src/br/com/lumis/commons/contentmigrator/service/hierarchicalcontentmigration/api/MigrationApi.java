@@ -3,6 +3,7 @@ package br.com.lumis.commons.contentmigrator.service.hierarchicalcontentmigratio
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -272,6 +273,17 @@ public class MigrationApi
 		{
 			throw new MigrationApiException(String.join(", ", missing) + (missing.size() == 1 ? " is required" : " are required"), missing);
 		}
+	}
+
+	/**
+	 * Fails with {@link MigrationApiException#ERROR_REQUIRED} naming {@code migrationId} when the id is missing or blank,
+	 * before any transaction or temporary system session is opened.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private static void requireMigrationId(String migrationId)
+	{
+		requireParameters(Collections.singletonMap("migrationId", migrationId), "migrationId");
 	}
 
 	private static String readUpdateMode(Map<String, Object> params)
@@ -606,9 +618,14 @@ public class MigrationApi
 	 * not running is left unchanged.
 	 *
 	 * @return the migration state after recording the stop request.
+	 * @throws MigrationApiException
+	 *             with {@link MigrationApiException#ERROR_REQUIRED} if the id is blank, checked before any transaction
+	 *             or temporary system session is opened.
+	 * @since %LUM_NEXT_VERSION%
 	 */
 	public static Map<String, Object> stop(String migrationId)
 	{
+		requireMigrationId(migrationId);
 		String userId = getCurrentUserId();
 		return runInTransaction((connection, session, transaction) ->
 		{
@@ -630,10 +647,14 @@ public class MigrationApi
 	 * deleted here.
 	 *
 	 * @throws MigrationApiException
-	 *             with {@link MigrationApiException#ERROR_LOCKED} while the migration is running.
+	 *             with {@link MigrationApiException#ERROR_REQUIRED} if the id is blank, checked before any transaction
+	 *             or temporary system session is opened, or {@link MigrationApiException#ERROR_LOCKED} while the
+	 *             migration is running.
+	 * @since %LUM_NEXT_VERSION%
 	 */
 	public static Map<String, Object> delete(String migrationId)
 	{
+		requireMigrationId(migrationId);
 		String userId = getCurrentUserId();
 		return runInTransaction((connection, session, transaction) ->
 		{

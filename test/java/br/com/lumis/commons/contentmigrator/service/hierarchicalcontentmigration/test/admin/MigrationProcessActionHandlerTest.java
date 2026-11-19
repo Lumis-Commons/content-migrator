@@ -109,6 +109,87 @@ public class MigrationProcessActionHandlerTest
 	}
 
 	/**
+	 * Runs a list button as the migration list posts it: the checked row arrives under the list data id {@code id}, as an
+	 * array or as a single value, never as {@code migrationId}. Stopping a stopped migration leaves it unchanged, so the
+	 * absence of an error proves that the handler found the migration.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	@Test
+	public void listButtonReadsTheCheckedRow() throws Exception
+	{
+		String root = fixture.addHierarchicalContent(origin, "selected root", null, true);
+		Map<?, ?> created = (Map<?, ?>) ModuleBridge.api("create", Map.of("name", "handler list button", "originServiceInstanceId", origin.getId(),
+				"destServiceInstanceId", destination.getId(), "selectedContentIds", root));
+		migrationId = (String) created.get("id");
+		invoke("stopMigration", Map.of("id", new String[] {migrationId}), Locale.US);
+		invoke("stopMigration", Map.of("id", migrationId), Locale.US);
+		Map<?, ?> stopped = (Map<?, ?>) ModuleBridge.api("get", migrationId);
+		assertEquals("STOPPED", stopped.get("status"));
+		assertEquals(Boolean.FALSE, stopped.get("stopRequested"));
+	}
+
+	/**
+	 * Names the button, the form and each missing field with its instruction, in both form languages, without reaching
+	 * the database: the new migration form lists its four fields in order, a list button without one checked row asks
+	 * for the row, and the selection window asks to be reopened from the list.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	@Test
+	public void missingFieldsAreNamedWithTheirForm() throws Exception
+	{
+		for (Locale locale : List.of(Locale.US, Locale.forLanguageTag("pt-BR")))
+		{
+			boolean english = Locale.US.equals(locale);
+			String[] create = requiredFieldLines("createMigration", Map.of(), locale);
+			assertEquals(java.util.Arrays.toString(create), 6, create.length);
+			assertTrue(create[0], create[0].contains(english ? "“Create”" : "“Criar”"));
+			assertTrue(create[0], create[0].contains(english ? "“New migration”" : "“Nova migração”"));
+			assertTrue(create[1], create[1].startsWith(english ? "• Name: " : "• Nome: "));
+			assertTrue(create[2], create[2].startsWith(english ? "• Origin: " : "• Origem: "));
+			assertTrue(create[3], create[3].startsWith(english ? "• Destination: " : "• Destino: "));
+			assertTrue(create[4], create[4].startsWith(english ? "• Contents to migrate: " : "• Conteúdos a migrar: "));
+			assertTrue(create[5], create[5].contains(english ? "“Create”" : "“Criar”"));
+
+			String[] list = requiredFieldLines("startIncremental", Map.of("id", new String[0]), locale);
+			assertEquals(java.util.Arrays.toString(list), 3, list.length);
+			assertTrue(list[0], list[0].contains(english ? "“Start incremental”" : "“Iniciar incremental”"));
+			assertTrue(list[0], list[0].contains(english ? "“Migration list”" : "“Lista de migrações”"));
+			assertTrue(list[1], list[1].startsWith(english ? "• Selected migration: tick" : "• Migração selecionada: marque"));
+
+			String[] edit = requiredFieldLines("updateSelection", Map.of("selectedContentIds", "unused"), locale);
+			assertEquals(java.util.Arrays.toString(edit), 3, edit.length);
+			assertTrue(edit[0], edit[0].contains(english ? "“Change selection”" : "“Alterar seleção”"));
+			assertTrue(edit[1], edit[1].startsWith(english ? "• Selected migration: close" : "• Migração selecionada: feche"));
+			assertTrue(edit[2], edit[2].contains(english ? "“Save selection”" : "“Salvar seleção”"));
+		}
+	}
+
+	/**
+	 * Runs an action that must fail with {@code REQUIRED} and returns its popup lines, after checking that the popup
+	 * script keeps the whole message.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private String[] requiredFieldLines(String action, Map<String, ?> parameters, Locale locale) throws Exception
+	{
+		try
+		{
+			invoke(action, parameters, locale);
+		}
+		catch (PortalException exception)
+		{
+			assertEquals("REQUIRED", ModuleBridge.errorCode(exception.getCause()));
+			String message = exception.getLocalizedMessage(locale);
+			assertFalse(message, message.contains("STR_"));
+			assertPopupScript(message);
+			return message.split("\n", -1);
+		}
+		throw new AssertionError(action + " without its required fields must fail");
+	}
+
+	/**
 	 * Shows one and then two ordered repository violations in each form language.
 	 *
 	 * @since %LUM_NEXT_VERSION%
@@ -378,14 +459,24 @@ public class MigrationProcessActionHandlerTest
 	 */
 	private void invokeCreate(String selection, Locale locale) throws Exception
 	{
+		invoke("createMigration", Map.of("name", "handler test", "originServiceInstanceId", origin.getId(), "destServiceInstanceId", destination.getId(),
+				"selectedContentIds", selection), locale);
+	}
+
+	/**
+	 * Runs the real process action with the given DOUI parameters and session locale.
+	 *
+	 * @since %LUM_NEXT_VERSION%
+	 */
+	private static void invoke(String action, Map<String, ?> parameters, Locale locale) throws Exception
+	{
 		Object handler = ModuleBridge.load(HANDLER).getConstructor().newInstance();
 		Class<?> base = Class.forName("lumis.doui.processaction.ProcessActionHandler");
-		set(base, handler, "id", "createMigration");
+		set(base, handler, "id", action);
 		SessionConfig session = ManagerFactory.getAuthenticationManager().impersonate(UserConfig.USER_SYSTEM_ID);
 		session.setLocale(locale);
 		set(base, handler, "sessionConfig", session);
-		set(base, handler, "parameters", Map.of("name", "handler test", "originServiceInstanceId", origin.getId(),
-				"destServiceInstanceId", destination.getId(), "selectedContentIds", selection));
+		set(base, handler, "parameters", parameters);
 		set(base, handler, "processActionNode", DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument().createElement("processAction"));
 		try
 		{
